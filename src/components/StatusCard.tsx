@@ -75,8 +75,6 @@ export function StatusCard({
     showObservations = !!data.observations && data.code === 2;
   }
 
-  const isLongText = bigText.length > 5;
-
   return (
     <main
       className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:p-8 transition-colors duration-500"
@@ -94,9 +92,8 @@ export function StatusCard({
             className="font-black leading-none tracking-tighter text-center w-full"
             style={{
               color: theme.textColor,
-              fontSize: isLongText
-                ? "clamp(2rem, 12vw, 8rem)"
-                : "clamp(4rem, 25vw, 14rem)",
+              fontSize: "clamp(3.5rem, 18vw, 10rem)",
+              minWidth: "min(90vw, 800px)",
             }}
           >
             {bigText}
