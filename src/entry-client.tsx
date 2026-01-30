@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { Providers } from "./components/Providers";
 import "./index.css";
 
 const container = document.getElementById("root");
@@ -9,23 +10,18 @@ if (container) {
   const initialData = window.__INITIAL_DATA__;
   const initialLocale = window.__INITIAL_LOCALE__;
 
+  const Root = () => (
+    <React.StrictMode>
+      <Providers>
+        <App initialData={initialData} initialLocale={initialLocale} />
+      </Providers>
+    </React.StrictMode>
+  );
+
   if (import.meta.env.DEV) {
-    // In dev mode, using hydrateRoot on empty HTML can cause issues because
-    // the server didn't render anything. We should use createRoot instead
-    // if there's no server-rendered content.
-    ReactDOM.createRoot(container).render(
-      <React.StrictMode>
-        <App initialData={initialData} initialLocale={initialLocale} />
-      </React.StrictMode>
-    );
+    ReactDOM.createRoot(container).render(<Root />);
   } else {
-    // In production (SSG), we always hydrate because HTML is pre-rendered
-    ReactDOM.hydrateRoot(
-      container,
-      <React.StrictMode>
-        <App initialData={initialData} initialLocale={initialLocale} />
-      </React.StrictMode>
-    );
+    ReactDOM.hydrateRoot(container, <Root />);
   }
 } else {
   console.error("Root element not found");

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { RetiroStatus } from "../types";
 import { fetchRetiroStatus, getMockData } from "../utils/madridApi";
 
@@ -7,98 +7,50 @@ interface UseRetiroStatusResult {
   loading: boolean;
   error: string | null;
   isOffline: boolean;
-  refetch: () => Promise<void>;
+  refetch: UseQueryResult<RetiroStatus, Error>["refetch"];
 }
 
+/**
+ * Custom hook to fetch and manage the status of El Retiro park.
+ * Uses TanStack Query for caching, background updates, and offline support.
+ * 
+ * @param initialData - Optional initial data for SSR/SSG hydration
+ * @returns Object containing status data, loading state, error, offline status, and refetch function
+ */
 export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRetiroStatusResult {
-  const [data, setData] = useState<RetiroStatus | null>(initialData);
-  const [loading, setLoading] = useState(!initialData);
-  const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+  const isBrowser = typeof window !== 'undefined';
+  const isOffline = isBrowser && !navigator.onLine;
 
-  // We define the fetch logic outside to return it as 'refetch',
-  // but we control the effect loop manually to avoid dependency cycles.
-  const loadStatus = async () => {
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      setIsOffline(true);
-      setError("offline");
-      setLoading(false);
-      return;
-    }
-
-    setIsOffline(false);
-    // Only set loading if we don't have data yet
-    if (!data && !initialData) setLoading(true);
-    setError(null);
-
-    try {
-      // Check for mock mode in URL
-      let mockParam: string | null = null;
-      let codeParam: string | null = null;
-
-      if (typeof window !== 'undefined') {
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ['retiroStatus'],
+    queryFn: async () => {
+      // Check for mock mode
+      if (isBrowser) {
         const urlParams = new URLSearchParams(window.location.search);
-        mockParam = urlParams.get("mock");
-        codeParam = urlParams.get("code");
+        const mockParam = urlParams.get("mock");
+        const codeParam = urlParams.get("code");
+
+        if (mockParam === "true" || codeParam) {
+          const mockCode = codeParam ? parseInt(codeParam, 10) : undefined;
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return getMockData(mockCode);
+        }
       }
 
-      if (mockParam === "true" || codeParam) {
-        const mockCode = codeParam ? parseInt(codeParam, 10) : undefined;
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 500));
-        setData(getMockData(mockCode));
-        return;
-      }
+      return fetchRetiroStatus();
+    },
+    initialData: initialData || undefined,
+    initialDataUpdatedAt: initialData?.updated_at ? new Date(initialData.updated_at).getTime() : undefined,
+    // If the data is older than 60s, it will be considered stale immediately and refetch in background
+    staleTime: 60 * 1000,
+    refetchInterval: 60 * 1000, // Refetch every minute
+  });
 
-      // Use shared fetcher
-      const result = await fetchRetiroStatus();
-      setData(result);
-    } catch (err) {
-      console.error("Failed to fetch status:", err);
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
+  return {
+    data: data || null,
+    loading: isLoading,
+    error: error instanceof Error ? error.message : (error ? String(error) : null),
+    isOffline,
+    refetch
   };
-
-  useEffect(() => {
-    let isMounted = true;
-    let interval: NodeJS.Timeout;
-
-    const runLoad = async () => {
-      if (!isMounted) return;
-      await loadStatus();
-    };
-
-    // If we have initial data, we might skip the immediate first fetch 
-    // or fetch in background. Here we fetch immediately to ensure freshness 
-    // but without clearing existing data/showing loading spinner (handled in loadStatus).
-    runLoad();
-
-    const handleOnline = () => {
-      if (isMounted) {
-        setIsOffline(false);
-        runLoad();
-      }
-    };
-    const handleOffline = () => {
-      if (isMounted) setIsOffline(true);
-    };
-
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-
-    // Refresh every 60 seconds
-    interval = setInterval(runLoad, 60000);
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-      clearInterval(interval);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array: runs once on mount
-
-  return { data, loading, error, isOffline, refetch: loadStatus };
 }
