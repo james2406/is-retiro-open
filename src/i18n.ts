@@ -37,7 +37,7 @@ const translations: Record<Locale, Translations> = {
         description: "Precaución: Zonas infantiles y deportivas restringidas.",
       },
       4: {
-        big: "RESTRINGIDO",
+        big: "ABIERTO*",
         description:
           "Eventos suspendidos. Se recomienda no permanecer en el parque.",
       },
@@ -63,7 +63,7 @@ const translations: Record<Locale, Translations> = {
         description: "Caution: Restricted access to specific zones.",
       },
       4: {
-        big: "RESTRICTED",
+        big: "OPEN*",
         description:
           "Events suspended. Recommendation: Do not stay in the park.",
       },
