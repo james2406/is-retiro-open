@@ -1,0 +1,98 @@
+export type Locale = "es" | "en";
+
+export interface Translations {
+  headerTitle: string;
+  headerSubtitle: string;
+  loading: string;
+  updated: string;
+  dataProvidedBy: string;
+  license: string;
+  checkOfficialSite: string;
+  status: {
+    1: { big: string; description: string };
+    2: { big: string; description: string };
+    3: { big: string; description: string };
+    4: { big: string; description: string };
+    5: { big: string; description: string };
+    6: { big: string; description: string };
+  };
+  error: { big: string; description: string };
+  offline: { big: string; description: string };
+}
+
+const translations: Record<Locale, Translations> = {
+  es: {
+    headerTitle: "¿Está abierto el Retiro?",
+    headerSubtitle: "",
+    loading: "Cargando...",
+    updated: "Actualizado",
+    dataProvidedBy: "Datos facilitados por el",
+    license: "Licencia: Madrid Open Data",
+    checkOfficialSite: "Ver web oficial",
+    status: {
+      1: { big: "ABIERTO", description: "Horario habitual." },
+      2: { big: "ABIERTO*", description: "Incidencias reportadas." },
+      3: {
+        big: "ABIERTO*",
+        description: "Precaución: Zonas infantiles y deportivas restringidas.",
+      },
+      4: {
+        big: "RESTRINGIDO",
+        description:
+          "Eventos suspendidos. Se recomienda no permanecer en el parque.",
+      },
+      5: { big: "CERRANDO", description: "Previsión de cierre." },
+      6: { big: "CERRADO", description: "Cerrado por alerta meteorológica." },
+    },
+    error: { big: "?", description: "Error obteniendo datos." },
+    offline: { big: "?", description: "Sin conexión." },
+  },
+  en: {
+    headerTitle: "Is Retiro Open?",
+    headerSubtitle: "",
+    loading: "Loading...",
+    updated: "Updated",
+    dataProvidedBy: "Data provided by",
+    license: "License: Madrid Open Data",
+    checkOfficialSite: "Check official site",
+    status: {
+      1: { big: "OPEN", description: "Regular hours." },
+      2: { big: "OPEN*", description: "Incidents reported." },
+      3: {
+        big: "OPEN*",
+        description: "Caution: Restricted access to specific zones.",
+      },
+      4: {
+        big: "RESTRICTED",
+        description:
+          "Events suspended. Recommendation: Do not stay in the park.",
+      },
+      5: { big: "CLOSING", description: "Forecast to close." },
+      6: { big: "CLOSED", description: "Closed due to weather alert." },
+    },
+    error: { big: "?", description: "Error fetching data." },
+    offline: { big: "?", description: "No internet connection." },
+  },
+};
+
+export function detectLocale(): Locale {
+  // 1. Check URL parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const langParam = urlParams.get("lang");
+  if (langParam === "en" || langParam === "es") {
+    return langParam;
+  }
+
+  // 2. Check browser language
+  const browserLang = navigator.language.toLowerCase();
+  if (browserLang.startsWith("es")) {
+    return "es";
+  }
+
+  // 3. Default to English for all other languages
+  return "en";
+}
+
+export function getTranslations(locale: Locale): Translations {
+  return translations[locale];
+}
