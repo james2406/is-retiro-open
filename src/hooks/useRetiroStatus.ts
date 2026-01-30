@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { RetiroStatus } from "../types";
+import { fetchRetiroStatus, getMockData } from "../utils/madridApi";
 
 interface UseRetiroStatusResult {
   data: RetiroStatus | null;
@@ -9,43 +10,16 @@ interface UseRetiroStatusResult {
   refetch: () => Promise<void>;
 }
 
-const RETRY_DELAYS = [1000, 2000, 4000]; // Exponential backoff
-const REQUEST_TIMEOUT = 8000;
-
-async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
-
-      const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      return response;
-    } catch (error) {
-      if (attempt === retries - 1) {
-        throw error;
-      }
-      await new Promise((resolve) =>
-        setTimeout(resolve, RETRY_DELAYS[attempt])
-      );
-    }
-  }
-  throw new Error("Max retries exceeded");
-}
-
-export function useRetiroStatus(): UseRetiroStatusResult {
-  const [data, setData] = useState<RetiroStatus | null>(null);
-  const [loading, setLoading] = useState(true);
+export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRetiroStatusResult {
+  const [data, setData] = useState<RetiroStatus | null>(initialData);
+  const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
-  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [isOffline, setIsOffline] = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false);
 
-  const fetchStatus = useCallback(async () => {
-    if (!navigator.onLine) {
+  // We define the fetch logic outside to return it as 'refetch',
+  // but we control the effect loop manually to avoid dependency cycles.
+  const loadStatus = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setIsOffline(true);
       setError("offline");
       setLoading(false);
@@ -53,24 +27,31 @@ export function useRetiroStatus(): UseRetiroStatusResult {
     }
 
     setIsOffline(false);
-    setLoading(true);
+    // Only set loading if we don't have data yet
+    if (!data && !initialData) setLoading(true);
     setError(null);
 
     try {
       // Check for mock mode in URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const mockParam = urlParams.get("mock");
-      const codeParam = urlParams.get("code");
+      let mockParam: string | null = null;
+      let codeParam: string | null = null;
 
-      let apiUrl = "/api/status";
-      if (mockParam === "true") {
-        apiUrl += "?mock=true";
-      } else if (codeParam) {
-        apiUrl += `?code=${codeParam}`;
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        mockParam = urlParams.get("mock");
+        codeParam = urlParams.get("code");
       }
 
-      const response = await fetchWithRetry(apiUrl);
-      const result: RetiroStatus = await response.json();
+      if (mockParam === "true" || codeParam) {
+        const mockCode = codeParam ? parseInt(codeParam, 10) : undefined;
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setData(getMockData(mockCode));
+        return;
+      }
+
+      // Use shared fetcher
+      const result = await fetchRetiroStatus();
       setData(result);
     } catch (err) {
       console.error("Failed to fetch status:", err);
@@ -78,29 +59,46 @@ export function useRetiroStatus(): UseRetiroStatusResult {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   useEffect(() => {
-    fetchStatus();
+    let isMounted = true;
+    let interval: NodeJS.Timeout;
+
+    const runLoad = async () => {
+      if (!isMounted) return;
+      await loadStatus();
+    };
+
+    // If we have initial data, we might skip the immediate first fetch 
+    // or fetch in background. Here we fetch immediately to ensure freshness 
+    // but without clearing existing data/showing loading spinner (handled in loadStatus).
+    runLoad();
 
     const handleOnline = () => {
-      setIsOffline(false);
-      fetchStatus();
+      if (isMounted) {
+        setIsOffline(false);
+        runLoad();
+      }
     };
-    const handleOffline = () => setIsOffline(true);
+    const handleOffline = () => {
+      if (isMounted) setIsOffline(true);
+    };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
     // Refresh every 60 seconds
-    const interval = setInterval(fetchStatus, 60000);
+    interval = setInterval(runLoad, 60000);
 
     return () => {
+      isMounted = false;
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
     };
-  }, [fetchStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array: runs once on mount
 
-  return { data, loading, error, isOffline, refetch: fetchStatus };
+  return { data, loading, error, isOffline, refetch: loadStatus };
 }

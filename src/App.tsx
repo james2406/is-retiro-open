@@ -5,16 +5,27 @@ import { StatusCard } from "./components/StatusCard";
 import { Footer } from "./components/Footer";
 import { STATUS_THEMES, ERROR_THEME } from "./types";
 import { detectLocale, getTranslations } from "./i18n";
-import type { StatusCode } from "./types";
+import type { StatusCode, RetiroStatus } from "./types";
 import type { Locale } from "./i18n";
 
-function App() {
-  const [locale, setLocale] = useState<Locale>("es");
-  const { data, loading, error, isOffline } = useRetiroStatus();
+interface AppProps {
+  initialData?: RetiroStatus | null;
+  initialLocale?: Locale;
+}
+
+function App({ initialData = null, initialLocale }: AppProps) {
+  const [locale, setLocale] = useState<Locale>(initialLocale || "es");
+  const { data, loading, error, isOffline } = useRetiroStatus(initialData);
 
   useEffect(() => {
-    setLocale(detectLocale());
-  }, []);
+    // Only attempt detection if no initial locale was provided (e.g. CSR fallback)
+    // or if we want to support dynamic switching via URL params on top of SSG.
+    // However, for SSG pages at /en or /, the locale is fixed by the path.
+    // We can keep detectLocale() only if initialLocale is missing.
+    if (!initialLocale) {
+      setLocale(detectLocale());
+    }
+  }, [initialLocale]);
 
   const t = getTranslations(locale);
 
@@ -23,9 +34,11 @@ function App() {
   if (loading) {
     // Use white background during loading
     theme = { bgColor: "#FFFFFF", textColor: "#000000" };
-  } else if (isOffline || error || !data) {
+  } else if (!data) {
+    // No data available (offline or error state)
     theme = ERROR_THEME;
   } else {
+    // We have data (either initial or fetched), so use it even if offline
     theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
   }
 

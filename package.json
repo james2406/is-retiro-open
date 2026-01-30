@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build:client": "tsc && vite build --outDir dist",
+    "build:server": "vite build --ssr src/entry-server.tsx --outDir dist/server",
+    "build": "npm run build:client && npm run build:server && tsx prerender.ts",
     "preview": "vite preview"
   },
   "keywords": [
@@ -16,6 +18,9 @@
   ],
   "author": "",
   "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "lucide-react": "^0.563.0",
     "react": "^19.2.4",
@@ -28,6 +33,7 @@
     "@vercel/node": "^5.5.28",
     "@vitejs/plugin-react": "^5.1.2",
     "tailwindcss": "^4.1.18",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }

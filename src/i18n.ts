@@ -76,7 +76,17 @@ const translations: Record<Locale, Translations> = {
 };
 
 export function detectLocale(): Locale {
-  // 1. Check URL parameter
+  // SSR check
+  if (typeof window === "undefined") {
+    return "es"; // Default to Spanish for SSR
+  }
+
+  // 1. Check for injected locale (SSG hydration)
+  if (typeof window !== "undefined" && (window as any).__INITIAL_LOCALE__) {
+    return (window as any).__INITIAL_LOCALE__ as Locale;
+  }
+
+  // 2. Check URL parameter
   const urlParams = new URLSearchParams(window.location.search);
   const langParam = urlParams.get("lang");
   if (langParam === "en" || langParam === "es") {
