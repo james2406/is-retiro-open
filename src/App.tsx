@@ -34,9 +34,9 @@ function App({ initialData = null }: AppProps) {
   } else {
     // We have data (either initial or fetched), so use it even if offline
     if (data) {
-        theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
+      theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
     } else {
-        theme = ERROR_THEME;
+      theme = ERROR_THEME;
     }
   }
 
