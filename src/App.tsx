@@ -5,12 +5,16 @@ import { StatusCard } from "./components/StatusCard";
 import { Footer } from "./components/Footer";
 import { STATUS_THEMES, ERROR_THEME } from "./types";
 import { detectLocale, getTranslations } from "./i18n";
-import type { StatusCode } from "./types";
+import type { StatusCode, RetiroStatus } from "./types";
 import type { Locale } from "./i18n";
 
-function App() {
+interface AppProps {
+  initialData?: RetiroStatus | null;
+}
+
+function App({ initialData = null }: AppProps) {
   const [locale, setLocale] = useState<Locale>("es");
-  const { data, loading, error, isOffline } = useRetiroStatus();
+  const { data, loading, error, isOffline } = useRetiroStatus(initialData);
 
   useEffect(() => {
     setLocale(detectLocale());
@@ -23,10 +27,17 @@ function App() {
   if (loading) {
     // Use white background during loading
     theme = { bgColor: "#FFFFFF", textColor: "#000000" };
-  } else if (isOffline || error || !data) {
+  } else if (!data) { // Removed isOffline check from here
+    theme = ERROR_THEME;
+  } else if (isOffline && !data) { // Only error theme if offline AND no data
     theme = ERROR_THEME;
   } else {
-    theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
+    // We have data (either initial or fetched), so use it even if offline
+    if (data) {
+        theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
+    } else {
+        theme = ERROR_THEME;
+    }
   }
 
   // Update theme-color meta tag for mobile browsers

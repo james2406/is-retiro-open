@@ -9,24 +9,22 @@ The purpose of this document is to outline the architecture and design for "Is R
 - **Target Audience:** Residents and tourists in Madrid.
 - **Localization:** **Spanish First**, with English translations for key status text.
 - **Key Functionality:** Real-time status checking, color-coded accessibility interface, description of restrictions.
-- **Constraints:** Frontend-focused with a lightweight serverless proxy to handle CORS and caching.
+- **Constraints:** Frontend-focused with direct client-side fetching (SPA) for static hosting compatibility.
 
 ## 2. Architecture Overview
 
-The application follows a **Serverless / JAMstack Architecture**.
+The application follows a **Static Single Page Application (SPA) Architecture**.
 
-- **Hosting:** Vercel (Frontend & Serverless Functions).
+- **Hosting:** Vercel (Static Hosting / CDN).
 - **Client:** React (Vite) Single Page Application.
-- **Proxy Layer:** A simple Vercel Serverless Function to fetch data from the Madrid API, handling CORS and caching.
 - **Data Source:** Madrid City Council (Ayuntamiento de Madrid) ESRI REST API.
+- **Fetch Strategy:** Client-Side Fetching (CSR) directly from the browser to the Madrid API (CORS enabled).
 
 ```mermaid
 graph LR
     User[Human User] -- Browser --> Client[React Client]
-    Client -- HTTP GET /api/status --> Proxy[Vercel Function]
-    Proxy -- REST API Call --> API[Madrid City Council API]
-    API -- JSON Data --> Proxy
-    Proxy -- JSON (CORS Enabled) --> Client
+    Client -- HTTP GET (CORS) --> API[Madrid City Council API]
+    API -- JSON Data --> Client
 ```
 
 ## 3. Data Source Integration
@@ -34,13 +32,10 @@ graph LR
 ### 3.1 External API Endpoint
 - **URL:** `https://sigma.madrid.es/hosted/rest/services/MEDIO_AMBIENTE/ALERTAS_PARQUES/MapServer/0/query`
 - **Method:** `GET`
+- **CORS:** Enabled by the provider (`Access-Control-Allow-Origin: *`).
 - **Layer Reliability:** The application targets Layer `0`. To ensure robustness, the fetcher will verify the layer name corresponds to "ALERTAS CLIMATOLOGICAS PARQUES" or fail gracefully.
 
-### 3.2 Internal Proxy Endpoint (`/api/status`)
-The client will request this internal endpoint to avoid CORS issues and ensure consistent headers.
-- **Cache Strategy:** `s-maxage=60, stale-while-revalidate=30` (1-minute freshness to accommodate rapid weather changes).
-
-### 3.3 Data Mapping
+### 3.2 Data Mapping
 **Timezone Rule:** All time displays must be strictly formatted in **Europe/Madrid** time, regardless of the user's local device time.
 
 The API returns `ALERTA_DESCRIPCION` (SmallInteger) and `HORARIO_INCIDENCIA` (String).
@@ -59,8 +54,8 @@ The API returns `ALERTA_DESCRIPCION` (SmallInteger) and `HORARIO_INCIDENCIA` (St
 ## 4. Frontend Design
 
 ### 4.1 Technology Stack
-- **Framework:** React 18 + TypeScript (via Vite).
-- **Styling:** Tailwind CSS (for reliable utility classes and contrast management).
+- **Framework:** React 19 + TypeScript (via Vite).
+- **Styling:** Tailwind CSS 4.
 - **Icons:** Lucide React (minimalist icons).
 
 ### 4.2 User Interface (UI)
@@ -84,19 +79,21 @@ The API returns `ALERTA_DESCRIPCION` (SmallInteger) and `HORARIO_INCIDENCIA` (St
 ## 5. Technical Implementation Details
 
 ### 5.1 Request Logic & Resilience
-1.  **Fetch:** Request `/api/status`.
+1.  **Fetch:** Request directly to `sigma.madrid.es` with CORS mode.
 2.  **Retry Strategy:** On network failure, retry 3 times with exponential backoff (1s, 2s, 4s).
 3.  **Timeout:** Abort request after 8 seconds.
+4.  **Auto-Refresh:** Poll every 60 seconds while the tab is active.
 
-### 5.2 JSON Schema
-The proxy response will normalize the data structure:
-```json
-{
-  "status": "open", // open, restricted, closing, closed
-  "code": 1, // The original integer code
-  "message": "Abierto según horario habitual",
-  "incidents": "09:00 a 21:00", // mapped from HORARIO_INCIDENCIA
-  "updated_at": "2026-01-30T10:00:00+01:00"
+### 5.2 Internal Data Model
+The hook normalizes the data structure:
+```typescript
+interface RetiroStatus {
+  status: "open" | "restricted" | "closing" | "closed";
+  code: 1 | 2 | 3 | 4 | 5 | 6;
+  message: string;
+  incidents: string | null; // mapped from HORARIO_INCIDENCIA
+  observations: string | null; // mapped from OBSERVACIONES
+  updated_at: string;
 }
 ```
 
@@ -107,8 +104,8 @@ The proxy response will normalize the data structure:
 ## 6. Development & Testing
 
 ### 6.1 Mock Mode
-To facilitate testing of Red/Closed states without waiting for a storm, the application will support a query parameter:
-*   `?mock=true`: Randomly cycles through states.
+To facilitate testing of Red/Closed states without waiting for a storm, the application supports query parameters:
+*   `?mock=true`: Randomly cycles through states (simulating network delay).
 *   `?code=6`: Forces a specific state (e.g., Closed).
 
 ### 6.2 License & Attribution

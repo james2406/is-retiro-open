@@ -37,7 +37,7 @@ const translations: Record<Locale, Translations> = {
         description: "Precaución: Zonas infantiles y deportivas restringidas.",
       },
       4: {
-        big: "ABIERTO*",
+        big: "RESTRINGIDO",
         description:
           "Eventos suspendidos. Se recomienda no permanecer en el parque.",
       },
@@ -63,7 +63,7 @@ const translations: Record<Locale, Translations> = {
         description: "Caution: Restricted access to specific zones.",
       },
       4: {
-        big: "OPEN*",
+        big: "RESTRICTED",
         description:
           "Events suspended. Recommendation: Do not stay in the park.",
       },
@@ -76,6 +76,11 @@ const translations: Record<Locale, Translations> = {
 };
 
 export function detectLocale(): Locale {
+  // SSR check
+  if (typeof window === "undefined") {
+    return "es"; // Default to Spanish for SSR
+  }
+
   // 1. Check URL parameter
   const urlParams = new URLSearchParams(window.location.search);
   const langParam = urlParams.get("lang");
