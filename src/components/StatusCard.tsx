@@ -50,37 +50,37 @@ export function StatusCard({
     // We have data, show it (even if technically offline/error in background)
     // Fallback if data is null (shouldn't happen here due to logic, but for TS)
     if (data) {
-        const code = data.code as StatusCode;
-        theme = STATUS_THEMES[code] || STATUS_THEMES[1];
-        bigText = t.status[code].big;
+      const code = data.code as StatusCode;
+      theme = STATUS_THEMES[code] || STATUS_THEMES[1];
+      bigText = t.status[code].big;
 
-        // Build description, integrating incident hours if present
-        if (data.incidents && data.code >= 5) {
+      // Build description, integrating incident hours if present
+      if (data.incidents && data.code >= 5) {
         const isSpanish = t.headerTitle.startsWith("¿");
         if (data.code === 5) {
-            // Forecast to close
-            description = isSpanish
+          // Forecast to close
+          description = isSpanish
             ? `Previsión de cierre de ${data.incidents}.`
             : `Forecast to close from ${data.incidents.replace(" a ", " to ")}.`;
         } else {
-            // Code 6: Closed
-            description = isSpanish
+          // Code 6: Closed
+          description = isSpanish
             ? `Cerrado por alerta meteorológica (${data.incidents}).`
             : `Closed due to weather alert (${data.incidents.replace(
                 " a ",
                 "–"
-            )}).`;
+              )}).`;
         }
-        } else {
+      } else {
         description = t.status[code].description;
-        }
+      }
 
-        showObservations = !!data.observations && data.code === 2;
+      showObservations = !!data.observations && data.code === 2;
     } else {
-        // Fallback for safety (should be covered by loading/error blocks)
-        theme = ERROR_THEME;
-        bigText = "";
-        description = "";
+      // Fallback for safety (should be covered by loading/error blocks)
+      theme = ERROR_THEME;
+      bigText = "";
+      description = "";
     }
   }
 

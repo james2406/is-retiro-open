@@ -11,4 +11,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Vercel Deploy
-        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+        run: curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"

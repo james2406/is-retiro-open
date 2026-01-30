@@ -19,11 +19,11 @@ The application follows a **Hybrid Static Site Generation (SSG)** architecture w
 - **Client:** React 19 (Vite) Single Page Application.
 - **Data Source:** Madrid City Council (Ayuntamiento de Madrid) ESRI REST API.
 - **Build Strategy:**
-    - **Build Time (SSG):** The `prerender.ts` script fetches the *current* status from the Madrid API and generates a pre-rendered `index.html`. This ensures users receive meaningful content (not a spinner) immediately on load.
-    - **Deployment Automation:** A GitHub Action triggers a Vercel rebuild every 60 minutes to keep the static HTML fresh.
+  - **Build Time (SSG):** The `prerender.ts` script fetches the *current* status from the Madrid API and generates a pre-rendered `index.html`. This ensures users receive meaningful content (not a spinner) immediately on load.
+  - **Deployment Automation:** A GitHub Action triggers a Vercel rebuild every 60 minutes to keep the static HTML fresh.
 - **Run Time (Client):**
-    - **Hydration:** React hydrates the pre-rendered HTML.
-    - **Background Revalidation:** The client immediately (and then every 60 seconds) fetches the latest status from the Madrid API (CORS enabled) to ensure the data is up-to-the-second fresh.
+  - **Hydration:** React hydrates the pre-rendered HTML.
+  - **Background Revalidation:** The client immediately (and then every 60 seconds) fetches the latest status from the Madrid API (CORS enabled) to ensure the data is up-to-the-second fresh.
 
 ```mermaid
 graph LR

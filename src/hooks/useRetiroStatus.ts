@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import type { RetiroStatus } from "../types";
 import { fetchRetiroStatus, getMockData } from "../utils/madridApi";
 
@@ -15,15 +15,10 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false);
-  
-  // Use a ref to access the latest data inside fetchStatus without adding it as a dependency
-  // This prevents the infinite loop: fetchStatus -> updates data -> fetchStatus changes -> useEffect calls fetchStatus
-  const dataRef = useRef(data);
-  useEffect(() => {
-    dataRef.current = data;
-  }, [data]);
 
-  const fetchStatus = useCallback(async () => {
+  // We define the fetch logic outside to return it as 'refetch',
+  // but we control the effect loop manually to avoid dependency cycles.
+  const loadStatus = async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
       setIsOffline(true);
       setError("offline");
@@ -32,12 +27,8 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
     }
 
     setIsOffline(false);
-    
-    // Only show loading state if we don't have data yet
-    if (!dataRef.current) {
-      setLoading(true);
-    }
-    
+    // Only set loading if we don't have data yet
+    if (!data && !initialData) setLoading(true);
     setError(null);
 
     try {
@@ -68,32 +59,46 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
     } finally {
       setLoading(false);
     }
-  }, []); // Depend on data to properly decide if we need to set loading=true
+  };
 
   useEffect(() => {
-    // Only fetch if we don't have initial data, OR if we want to refresh
-    // For hydration, we might want to skip the immediate fetch if we trust the server data
-    // But since the status changes, re-fetching immediately is safer to ensure freshness
-    fetchStatus();
+    let isMounted = true;
+    let interval: NodeJS.Timeout;
+
+    const runLoad = async () => {
+      if (!isMounted) return;
+      await loadStatus();
+    };
+
+    // If we have initial data, we might skip the immediate first fetch 
+    // or fetch in background. Here we fetch immediately to ensure freshness 
+    // but without clearing existing data/showing loading spinner (handled in loadStatus).
+    runLoad();
 
     const handleOnline = () => {
-      setIsOffline(false);
-      fetchStatus();
+      if (isMounted) {
+        setIsOffline(false);
+        runLoad();
+      }
     };
-    const handleOffline = () => setIsOffline(true);
+    const handleOffline = () => {
+      if (isMounted) setIsOffline(true);
+    };
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
     // Refresh every 60 seconds
-    const interval = setInterval(fetchStatus, 60000);
+    interval = setInterval(runLoad, 60000);
 
     return () => {
+      isMounted = false;
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       clearInterval(interval);
     };
-  }, [fetchStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array: runs once on mount
 
-  return { data, loading, error, isOffline, refetch: fetchStatus };
+  return { data, loading, error, isOffline, refetch: loadStatus };
 }

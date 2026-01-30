@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchRetiroStatus } from "./src/utils/madridApi";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,6 +13,15 @@ const META_DESCRIPTIONS = {
   es: "Consulta en tiempo real el estado del Parque del Retiro de Madrid.",
   en: "Check real-time status of Retiro Park in Madrid."
 };
+
+// Safe JSON serializer to prevent XSS when injecting data into HTML
+function serializeForScript(data: any): string {
+  return JSON.stringify(data)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}
 
 async function prerender() {
   console.log("Starting SSG Prerender...");
@@ -44,7 +53,8 @@ async function prerender() {
      process.exit(1);
   }
 
-  const { render } = await import(serverEntryPath);
+  // Use file URL for cross-platform compatibility (Windows)
+  const { render } = await import(pathToFileURL(serverEntryPath).href);
 
   // 3. Render for each locale
   for (const locale of LOCALES) {
@@ -60,7 +70,7 @@ async function prerender() {
       .replace(`<!--app-html-->`, appHtml)
       .replace(
         `<!--app-data-->`,
-        `<script>window.__INITIAL_DATA__ = ${JSON.stringify(statusData)}; window.__INITIAL_LOCALE__ = "${locale}";</script>`
+        `<script>window.__INITIAL_DATA__ = ${serializeForScript(statusData)}; window.__INITIAL_LOCALE__ = "${locale}";</script>`
       )
       .replace('lang="es"', `lang="${locale}"`);
 

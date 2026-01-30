@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   ssr: {
-    // These dependencies should not be bundled in the SSR build
+    // Bundle these dependencies in the SSR build (required for SSR compatibility)
     noExternal: ["lucide-react"],
   },
 });

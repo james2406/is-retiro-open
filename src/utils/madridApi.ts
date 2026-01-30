@@ -35,13 +35,12 @@ function getStatusType(code: number): StatusType {
 
 export async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
   for (let attempt = 0; attempt < retries; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT);
+    
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT);
-
       const response = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeout);
-
+      
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
@@ -54,6 +53,8 @@ export async function fetchWithRetry(url: string, retries = 3): Promise<Response
       await new Promise((resolve) =>
         setTimeout(resolve, CONFIG.RETRY_DELAYS[attempt])
       );
+    } finally {
+      clearTimeout(timeout);
     }
   }
   throw new Error("Max retries exceeded");
@@ -99,7 +100,13 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
 }
 
 export function getMockData(code?: number): RetiroStatus {
-  const mockCode = code ?? Math.floor(Math.random() * 6) + 1;
+  let mockCode = code ?? Math.floor(Math.random() * 6) + 1;
+  
+  // Validate and clamp mockCode to be within valid range 1-6
+  if (isNaN(mockCode) || mockCode < 1 || mockCode > 6) {
+    mockCode = 1;
+  }
+  
   const messages: Record<number, string> = {
     1: "Abierto según horario habitual",
     2: "Incidencias en algunas zonas",

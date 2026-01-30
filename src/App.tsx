@@ -34,17 +34,12 @@ function App({ initialData = null, initialLocale }: AppProps) {
   if (loading) {
     // Use white background during loading
     theme = { bgColor: "#FFFFFF", textColor: "#000000" };
-  } else if (!data) { // Removed isOffline check from here
-    theme = ERROR_THEME;
-  } else if (isOffline && !data) { // Only error theme if offline AND no data
+  } else if (!data) {
+    // No data available (offline or error state)
     theme = ERROR_THEME;
   } else {
     // We have data (either initial or fetched), so use it even if offline
-    if (data) {
-      theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
-    } else {
-      theme = ERROR_THEME;
-    }
+    theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
   }
 
   // Update theme-color meta tag for mobile browsers
