@@ -26,6 +26,14 @@ function App() {
     theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
   }
 
+  // Update theme-color meta tag for mobile browsers
+  useEffect(() => {
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute('content', theme.bgColor);
+    }
+  }, [theme.bgColor]);
+
   return (
     <div
       className="min-h-screen flex flex-col transition-colors duration-500 relative overflow-hidden"
