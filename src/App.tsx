@@ -36,7 +36,7 @@ function App() {
 
   return (
     <div
-      className="min-h-screen flex flex-col transition-colors duration-500 relative overflow-hidden"
+      className="h-screen flex flex-col transition-colors duration-500 relative overflow-y-auto overflow-x-hidden"
       style={{ backgroundColor: theme.bgColor }}
     >
       {/* Decorative background elements */}
