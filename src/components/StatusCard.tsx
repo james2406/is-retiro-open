@@ -64,9 +64,9 @@ export function StatusCard({
         description = isSpanish
           ? `Cerrado por alerta meteorológica (${data.incidents}).`
           : `Closed due to weather alert (${data.incidents.replace(
-              " a ",
-              "–"
-            )}).`;
+            " a ",
+            "–"
+          )}).`;
       }
     } else {
       description = t.status[code].description;
@@ -84,18 +84,9 @@ export function StatusCard({
       aria-live="polite"
     >
       {loading ? (
-        <div className="flex flex-col items-center gap-4">
-          <div
-            className="w-16 h-16 border-4 rounded-full animate-spin"
-            style={{
-              borderColor: "#e0e0e0",
-              borderTopColor: "#000000",
-            }}
-          />
-          <p className="text-xl font-semibold" style={{ color: "#000000" }}>
-            {t.loading}
-          </p>
-        </div>
+        <p className="text-xl sm:text-2xl font-medium" style={{ color: "#000000" }}>
+          {t.loading}
+        </p>
       ) : (
         <div className="flex flex-col items-center text-center max-w-2xl">
           {/* Big Status Text */}
