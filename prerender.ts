@@ -6,6 +6,14 @@ import { fetchRetiroStatus } from "./src/utils/madridApi";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const toAbsolute = (p: string) => path.resolve(__dirname, p);
 
+const LOCALES = ["es", "en"] as const;
+
+// Simple meta descriptions for SEO
+const META_DESCRIPTIONS = {
+  es: "Consulta en tiempo real el estado del Parque del Retiro de Madrid.",
+  en: "Check real-time status of Retiro Park in Madrid."
+};
+
 async function prerender() {
   console.log("Starting SSG Prerender...");
 
@@ -38,22 +46,47 @@ async function prerender() {
 
   const { render } = await import(serverEntryPath);
 
-  // 3. Render the app
-  const appHtml = render(statusData);
+  // 3. Render for each locale
+  for (const locale of LOCALES) {
+    console.log(`Rendering for locale: ${locale}`);
 
-  // 4. Inject into HTML
-  // We replace the outlet <!--app-html--> and also inject the initial state
-  const html = template
-    .replace(`<!--app-html-->`, appHtml)
-    .replace(
-      `<!--app-data-->`,
-      `<script>window.__INITIAL_DATA__ = ${JSON.stringify(statusData)}</script>`
-    );
+    // 3a. Render the app
+    const appHtml = render(statusData, locale);
 
-  // 5. Write to dist/index.html
-  const filePath = toAbsolute("dist/index.html");
-  fs.writeFileSync(filePath, html);
-  console.log("Successfully pre-rendered dist/index.html");
+    // 3b. Inject into HTML
+    // We replace the outlet <!--app-html--> and also inject the initial state
+    // We also update the lang attribute and meta description
+    let html = template
+      .replace(`<!--app-html-->`, appHtml)
+      .replace(
+        `<!--app-data-->`,
+        `<script>window.__INITIAL_DATA__ = ${JSON.stringify(statusData)}; window.__INITIAL_LOCALE__ = "${locale}";</script>`
+      )
+      .replace('lang="es"', `lang="${locale}"`);
+
+    // Update meta description if needed
+    if (locale === "en") {
+      html = html.replace(
+        META_DESCRIPTIONS.es, 
+        META_DESCRIPTIONS.en
+      );
+    }
+
+    // 5. Write to correct file location
+    let filePath;
+    if (locale === "es") {
+        filePath = toAbsolute("dist/index.html");
+    } else {
+        const dir = toAbsolute(`dist/${locale}`);
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        filePath = path.join(dir, "index.html");
+    }
+    
+    fs.writeFileSync(filePath, html);
+    console.log(`Successfully pre-rendered ${filePath}`);
+  }
 }
 
 prerender();

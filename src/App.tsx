@@ -10,15 +10,22 @@ import type { Locale } from "./i18n";
 
 interface AppProps {
   initialData?: RetiroStatus | null;
+  initialLocale?: Locale;
 }
 
-function App({ initialData = null }: AppProps) {
-  const [locale, setLocale] = useState<Locale>("es");
+function App({ initialData = null, initialLocale }: AppProps) {
+  const [locale, setLocale] = useState<Locale>(initialLocale || "es");
   const { data, loading, error, isOffline } = useRetiroStatus(initialData);
 
   useEffect(() => {
-    setLocale(detectLocale());
-  }, []);
+    // Only attempt detection if no initial locale was provided (e.g. CSR fallback)
+    // or if we want to support dynamic switching via URL params on top of SSG.
+    // However, for SSG pages at /en or /, the locale is fixed by the path.
+    // We can keep detectLocale() only if initialLocale is missing.
+    if (!initialLocale) {
+      setLocale(detectLocale());
+    }
+  }, [initialLocale]);
 
   const t = getTranslations(locale);
 
