@@ -1,5 +1,6 @@
 import { ExternalLink } from "lucide-react";
 import type { Translations } from "../i18n";
+import packageJson from "../../package.json";
 
 interface FooterProps {
   textColor?: string;
@@ -23,6 +24,7 @@ export function Footer({ textColor = "#FFFFFF", t }: FooterProps) {
           </a>
         </p>
         <p className="text-xs opacity-40">{t.license}</p>
+        <p className="text-xs opacity-30 mt-1">v{packageJson.version}</p>
       </div>
     </footer>
   );
