@@ -20,7 +20,10 @@ function App() {
 
   // Determine current theme for consistent styling
   let theme;
-  if (isOffline || error || !data) {
+  if (loading) {
+    // Use white background during loading
+    theme = { bgColor: "#FFFFFF", textColor: "#000000" };
+  } else if (isOffline || error || !data) {
     theme = ERROR_THEME;
   } else {
     theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];

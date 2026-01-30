@@ -86,13 +86,13 @@ export function StatusCard({
       {loading ? (
         <div className="flex flex-col items-center gap-4">
           <div
-            className="w-16 h-16 border-4 border-t-transparent rounded-full animate-spin"
+            className="w-16 h-16 border-4 rounded-full animate-spin"
             style={{
-              borderColor: `${theme.textColor}40`,
-              borderTopColor: "transparent",
+              borderColor: "#e0e0e0",
+              borderTopColor: "#000000",
             }}
           />
-          <p className="text-xl" style={{ color: theme.textColor }}>
+          <p className="text-xl font-semibold" style={{ color: "#000000" }}>
             {t.loading}
           </p>
         </div>
