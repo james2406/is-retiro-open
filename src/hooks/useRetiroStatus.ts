@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import type { RetiroStatus } from "../types";
 import { fetchRetiroStatus, getMockData } from "../utils/madridApi";
 
@@ -15,6 +15,13 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
   const [loading, setLoading] = useState(!initialData);
   const [error, setError] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+  
+  // Use a ref to access the latest data inside fetchStatus without adding it as a dependency
+  // This prevents the infinite loop: fetchStatus -> updates data -> fetchStatus changes -> useEffect calls fetchStatus
+  const dataRef = useRef(data);
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   const fetchStatus = useCallback(async () => {
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
@@ -27,7 +34,7 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
     setIsOffline(false);
     
     // Only show loading state if we don't have data yet
-    if (!data) {
+    if (!dataRef.current) {
       setLoading(true);
     }
     
@@ -61,7 +68,7 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
     } finally {
       setLoading(false);
     }
-  }, [data]); // Depend on data to properly decide if we need to set loading=true
+  }, []); // Depend on data to properly decide if we need to set loading=true
 
   useEffect(() => {
     // Only fetch if we don't have initial data, OR if we want to refresh
