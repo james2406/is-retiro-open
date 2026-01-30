@@ -33,7 +33,8 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
         return fetchRetiroStatus();
     },
     initialData: initialData || undefined,
-    // If we have initialData, we consider it fresh for 60s so we don't refetch immediately on mount
+    initialDataUpdatedAt: initialData?.updated_at ? new Date(initialData.updated_at).getTime() : undefined,
+    // If the data is older than 60s, it will be considered stale immediately and refetch in background
     staleTime: 60 * 1000, 
     refetchInterval: 60 * 1000, // Refetch every minute
   });
