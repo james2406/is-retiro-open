@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+/**
+ * Global provider component that wraps the application.
+ * Configures the TanStack Query client with default options for caching and retries.
+ * 
+ * @param props.children - The child components to wrap
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
