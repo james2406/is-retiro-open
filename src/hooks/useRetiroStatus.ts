@@ -94,7 +94,12 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
     }
 
     setIsOffline(false);
-    setLoading(true);
+    
+    // Only show loading state if we don't have data yet
+    if (!data) {
+      setLoading(true);
+    }
+    
     setError(null);
 
     try {
@@ -160,6 +165,7 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
     // Only fetch if we don't have initial data, OR if we want to refresh
     // For hydration, we might want to skip the immediate fetch if we trust the server data
     // But since the status changes, re-fetching immediately is safer to ensure freshness
+    // However, to prevent a flash of "loading" if we have data, we rely on the check inside fetchStatus
     fetchStatus();
 
     const handleOnline = () => {
