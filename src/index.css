@@ -6,7 +6,6 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
 }
 
 body {
@@ -14,8 +13,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  position: fixed;
-  width: 100%;
   overscroll-behavior: none;
 }
 
