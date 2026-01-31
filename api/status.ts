@@ -17,6 +17,10 @@ interface MadridAPIResponse {
 const RETIRO_API_URL =
   "https://sigma.madrid.es/hosted/rest/services/MEDIO_AMBIENTE/ALERTAS_PARQUES/MapServer/0/query";
 
+/**
+ * Maps the Madrid API alert code to a simplified status string.
+ * Code 5 (previously "closing") is now treated as "closed".
+ */
 function getStatusType(code: number): string {
   switch (code) {
     case 1:
@@ -26,7 +30,6 @@ function getStatusType(code: number): string {
     case 4:
       return "restricted";
     case 5:
-      return "closed";
     case 6:
       return "closed";
     default:
@@ -34,6 +37,11 @@ function getStatusType(code: number): string {
   }
 }
 
+/**
+ * Generates mock data for testing purposes.
+ * @param code Optional specific alert code to simulate.
+ * @returns Mocked RetiroStatus object.
+ */
 function getMockData(code?: number) {
   const mockCode = code ?? Math.floor(Math.random() * 6) + 1;
   const messages: Record<number, string> = {
@@ -55,6 +63,10 @@ function getMockData(code?: number) {
   };
 }
 
+/**
+ * Serverless function handler for the Retiro status API.
+ * Acts as a proxy to the Madrid API with caching and error handling.
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");

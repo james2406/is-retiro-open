@@ -16,6 +16,10 @@ interface MadridAPIResponse {
   features?: MadridAPIFeature[];
 }
 
+/**
+ * Maps the Madrid API alert code to a StatusType.
+ * Code 5 (previously "closing") is now treated as "closed".
+ */
 function getStatusType(code: number): StatusType {
   switch (code) {
     case 1:
@@ -25,7 +29,6 @@ function getStatusType(code: number): StatusType {
     case 4:
       return "restricted";
     case 5:
-      return "closed";
     case 6:
       return "closed";
     default:
@@ -33,6 +36,13 @@ function getStatusType(code: number): StatusType {
   }
 }
 
+/**
+ * Fetches a URL with retry logic and exponential backoff.
+ * @param url The URL to fetch.
+ * @param retries Number of retry attempts (default: 3).
+ * @returns The Response object if successful.
+ * @throws Error if all retries fail.
+ */
 export async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
   for (let attempt = 0; attempt < retries; attempt++) {
     const controller = new AbortController();
@@ -60,6 +70,11 @@ export async function fetchWithRetry(url: string, retries = 3): Promise<Response
   throw new Error("Max retries exceeded");
 }
 
+/**
+ * Fetches the current status of El Retiro Park from the Madrid API.
+ * Parses the response and maps it to our internal data model.
+ * @returns Promise resolving to the RetiroStatus object.
+ */
 export async function fetchRetiroStatus(): Promise<RetiroStatus> {
   const params = new URLSearchParams({
     where: "1=1",
@@ -99,6 +114,11 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
   };
 }
 
+/**
+ * Generates mock data for testing or when the API is unreachable.
+ * @param code Optional specific alert code to force.
+ * @returns Mocked RetiroStatus object.
+ */
 export function getMockData(code?: number): RetiroStatus {
   let mockCode = code ?? Math.floor(Math.random() * 6) + 1;
   

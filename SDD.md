@@ -50,8 +50,8 @@ graph LR
 | **2** | Incidencias | **SÍ / YES*** | **Blue** (`#3498DB`) | White | **Incidencias:** [Display `OBSERVACIONES` field].<br>*Incidents reported.* |
 | **3** | Alerta Amarilla | **SÍ / YES*** | **Yellow** (`#F1C40F`) | **Black** | **Precaución:** Zonas infantiles y deportivas restringidas.<br>*Caution: Restricted access to specific zones.* |
 | **4** | Alerta Naranja | **RESTRINGIDO / RESTRICTED** | **Orange** (`#E67E22`) | White | **Eventos suspendidos.** Se recomienda no permanecer en el parque.<br>*Events suspended. Recommendation: Do not stay in the park.* |
-| **5** | Previsión Roja | **CERRANDO / CLOSING** | **Red** (`#E74C3C`) | White | **Previsión de cierre:** [Display `HORARIO_INCIDENCIA`].<br>*Forecast to close during these hours.* |
-| **6** | Cerrado | **NO** | **Dark Red** (`#C0392B`) | White | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>*Closed.* |
+| **5** | Previsión Roja | **CERRADO / CLOSED** | **Dark Red** (`#C0392B`) | White | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>*Closed due to weather alert.* |
+| **6** | Cerrado | **CERRADO / CLOSED** | **Dark Red** (`#C0392B`) | White | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>*Closed due to weather alert.* |
 
 ## 4. Frontend Design
 
