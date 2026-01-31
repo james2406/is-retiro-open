@@ -86,7 +86,7 @@ export function StatusCard({
 
   return (
     <main
-      className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:p-8 transition-colors duration-500"
+      className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:p-8"
       role="status"
       aria-live="polite"
     >

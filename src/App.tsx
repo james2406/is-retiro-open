@@ -48,11 +48,12 @@ function App({ initialData = null, initialLocale }: AppProps) {
     if (metaThemeColor) {
       metaThemeColor.setAttribute('content', theme.bgColor);
     }
+    document.body.style.backgroundColor = theme.bgColor;
   }, [theme.bgColor]);
 
   return (
     <div
-      className="min-h-screen flex flex-col transition-colors duration-500 relative overflow-hidden"
+      className="min-h-screen flex flex-col relative"
       style={{ backgroundColor: theme.bgColor }}
     >
       {/* Decorative background elements */}
