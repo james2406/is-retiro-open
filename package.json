@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.20",
+    "@vercel/og": "^0.8.6",
     "lucide-react": "^0.563.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

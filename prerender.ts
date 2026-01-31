@@ -23,6 +23,26 @@ function serializeForScript(data: any): string {
     .replace(/\u2029/g, "\\u2029");
 }
 
+// Helper to generate dynamic descriptions for SEO/Social
+function getStatusDescription(statusData: any, locale: string): string {
+  const isEs = locale === "es";
+  const { status } = statusData;
+
+  if (status === "open") {
+    return isEs
+      ? "✅ SÍ, el Retiro está ABIERTO. Consulta el horario y condiciones."
+      : "✅ YES, Retiro Park is OPEN. Check hours and conditions.";
+  } else if (status === "restricted") {
+    return isEs
+      ? "⚠️ PRECAUCIÓN: El Retiro tiene zonas balizadas y restricciones."
+      : "⚠️ CAUTION: Retiro Park has restricted zones.";
+  } else {
+    return isEs
+      ? "⛔️ CERRADO: El Retiro está cerrado por alerta meteorológica."
+      : "⛔️ CLOSED: Retiro Park is closed due to weather alert.";
+  }
+}
+
 async function prerender() {
   console.log("Starting SSG Prerender...");
 
@@ -65,7 +85,7 @@ async function prerender() {
 
     // 3b. Inject into HTML
     // We replace the outlet <!--app-html--> and also inject the initial state
-    // We also update the lang attribute and meta description
+    // We also update the lang attribute
     let html = template
       .replace(`<!--app-html-->`, appHtml)
       .replace(
@@ -74,12 +94,26 @@ async function prerender() {
       )
       .replace('lang="es"', `lang="${locale}"`);
 
-    // Update meta description if needed
+    // 4. Update Meta Tags (Description & OG)
+    const dynamicDescription = getStatusDescription(statusData, locale);
+    
+    // Replace the default description wherever it appears
+    const descriptionRegex = new RegExp(META_DESCRIPTIONS.es, "g");
+    html = html.replace(descriptionRegex, dynamicDescription);
+
+    // Update OG Image to use dynamic Vercel OG endpoint
+    const ogImageUrl = `https://is-retiro-open.vercel.app/api/og?code=${statusData.code}`;
+    
+    // Replace the default absolute OG image URL with our dynamic one
+    // We use a regex that matches the specific default URL in index.html
+    const defaultOgImageRegex = /https:\/\/is-retiro-open\.vercel\.app\/og-image\.png/g;
+    html = html.replace(defaultOgImageRegex, ogImageUrl);
+
+
+
+    // Update locale-specific tags
     if (locale === "en") {
-      html = html.replace(
-        META_DESCRIPTIONS.es, 
-        META_DESCRIPTIONS.en
-      );
+        html = html.replace('content="es_ES"', 'content="en_US"');
     }
 
     // 5. Write to correct file location
