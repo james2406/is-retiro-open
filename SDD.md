@@ -78,7 +78,7 @@ graph LR
 ### 5.2 Internal Data Model
 ```typescript
 interface RetiroStatus {
-  status: "open" | "restricted" | "closing" | "closed";
+  status: "open" | "restricted" | "closed";
   code: 1 | 2 | 3 | 4 | 5 | 6;
   message: string;
   incidents: string | null;

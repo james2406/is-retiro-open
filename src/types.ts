@@ -1,6 +1,6 @@
 export type StatusCode = 1 | 2 | 3 | 4 | 5 | 6;
 
-export type StatusType = "open" | "restricted" | "closing" | "closed";
+export type StatusType = "open" | "restricted" | "closed";
 
 export interface RetiroStatus {
   status: StatusType;
@@ -21,7 +21,7 @@ export const STATUS_THEMES: Record<StatusCode, StatusTheme> = {
   2: { bgColor: "#3498DB", textColor: "#FFFFFF" },
   3: { bgColor: "#F1C40F", textColor: "#000000" },
   4: { bgColor: "#E67E22", textColor: "#FFFFFF" },
-  5: { bgColor: "#E74C3C", textColor: "#FFFFFF" },
+  5: { bgColor: "#C0392B", textColor: "#FFFFFF" },
   6: { bgColor: "#C0392B", textColor: "#FFFFFF" },
 };
 

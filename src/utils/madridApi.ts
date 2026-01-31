@@ -25,7 +25,7 @@ function getStatusType(code: number): StatusType {
     case 4:
       return "restricted";
     case 5:
-      return "closing";
+      return "closed";
     case 6:
       return "closed";
     default:
@@ -112,7 +112,7 @@ export function getMockData(code?: number): RetiroStatus {
     2: "Incidencias en algunas zonas",
     3: "Alerta amarilla por viento",
     4: "Alerta naranja - Eventos suspendidos",
-    5: "Previsión de cierre por tormenta",
+    5: "Cerrado por condiciones meteorológicas",
     6: "Cerrado por condiciones meteorológicas",
   };
 

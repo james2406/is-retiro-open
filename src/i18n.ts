@@ -41,7 +41,7 @@ const translations: Record<Locale, Translations> = {
         description:
           "Eventos suspendidos. Se recomienda no permanecer en el parque.",
       },
-      5: { big: "CERRANDO", description: "Previsión de cierre." },
+      5: { big: "CERRADO", description: "Cerrado por alerta meteorológica." },
       6: { big: "CERRADO", description: "Cerrado por alerta meteorológica." },
     },
     error: { big: "?", description: "Error obteniendo datos." },
@@ -67,7 +67,7 @@ const translations: Record<Locale, Translations> = {
         description:
           "Events suspended. Recommendation: Do not stay in the park.",
       },
-      5: { big: "CLOSING", description: "Forecast to close." },
+      5: { big: "CLOSED", description: "Closed due to weather alert." },
       6: { big: "CLOSED", description: "Closed due to weather alert." },
     },
     error: { big: "?", description: "Error fetching data." },
