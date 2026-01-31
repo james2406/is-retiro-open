@@ -99,8 +99,8 @@ export function detectLocale(): Locale {
     return "es";
   }
 
-  // 3. Default to English for all other languages
-  return "en";
+  // 3. Default to Spanish for all other languages
+  return "es";
 }
 
 export function getTranslations(locale: Locale): Translations {
