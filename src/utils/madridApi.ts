@@ -18,7 +18,11 @@ interface MadridAPIResponse {
 
 /**
  * Maps the Madrid API alert code to a StatusType.
- * Code 5 (previously "closing") is now treated as "closed".
+ *
+ * Status Mapping Update (Jan 2026):
+ * Empirical evidence shows Code 5 ("Previsión Roja") results in actual park closure (gates locked).
+ * While the API distinguishes between 5 (Standard Red Alert) and 6 (Emergency/Weather),
+ * both result in the park being closed to the public.
  */
 function getStatusType(code: number): StatusType {
   switch (code) {
@@ -28,8 +32,8 @@ function getStatusType(code: number): StatusType {
       return "open";
     case 4:
       return "restricted";
-    case 5:
-    case 6:
+    case 5: // Standard Red Alert (Closure)
+    case 6: // Emergency/Weather Closure
       return "closed";
     default:
       return "open";
