@@ -52,7 +52,7 @@ function App({ initialData = null, initialLocale }: AppProps) {
 
   return (
     <div
-      className="h-screen flex flex-col relative overflow-y-auto overflow-x-hidden"
+      className="h-screen flex flex-col transition-colors duration-500 relative overflow-y-auto overflow-x-hidden"
       style={{ backgroundColor: theme.bgColor }}
     >
       {/* Decorative background elements */}
