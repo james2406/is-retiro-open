@@ -17,7 +17,15 @@ interface MadridAPIResponse {
 const RETIRO_API_URL =
   "https://sigma.madrid.es/hosted/rest/services/MEDIO_AMBIENTE/ALERTAS_PARQUES/MapServer/0/query";
 
-function getStatusType(code: number): string {
+/**
+ * Maps the Madrid API alert code to a simplified status string.
+ *
+ * Status Mapping Update (Jan 2026):
+ * Empirical evidence shows Code 5 ("Previsión Roja") results in actual park closure (gates locked).
+ * While the API distinguishes between 5 (Standard Red Alert) and 6 (Emergency/Weather),
+ * both result in the park being closed to the public.
+ */
+function getStatusType(code: number): "open" | "restricted" | "closed" {
   switch (code) {
     case 1:
     case 2:
@@ -25,23 +33,33 @@ function getStatusType(code: number): string {
       return "open";
     case 4:
       return "restricted";
-    case 5:
-      return "closing";
-    case 6:
+    case 5: // Standard Red Alert (Closure)
+    case 6: // Emergency/Weather Closure
       return "closed";
     default:
       return "open";
   }
 }
 
+/**
+ * Generates mock data for testing purposes.
+ * @param code Optional specific alert code to simulate.
+ * @returns Mocked RetiroStatus object.
+ */
 function getMockData(code?: number) {
-  const mockCode = code ?? Math.floor(Math.random() * 6) + 1;
+  let mockCode = code ?? Math.floor(Math.random() * 6) + 1;
+
+  // Validate and clamp mockCode to be within valid range 1-6
+  if (isNaN(mockCode) || mockCode < 1 || mockCode > 6) {
+    mockCode = 1;
+  }
+
   const messages: Record<number, string> = {
     1: "Abierto según horario habitual",
     2: "Incidencias en algunas zonas",
     3: "Alerta amarilla por viento",
     4: "Alerta naranja - Eventos suspendidos",
-    5: "Previsión de cierre por tormenta",
+    5: "Cerrado por condiciones meteorológicas",
     6: "Cerrado por condiciones meteorológicas",
   };
 
@@ -55,6 +73,10 @@ function getMockData(code?: number) {
   };
 }
 
+/**
+ * Serverless function handler for the Retiro status API.
+ * Acts as a proxy to the Madrid API with caching and error handling.
+ */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");

@@ -57,20 +57,13 @@ export function StatusCard({
       // Build description, integrating incident hours if present
       if (data.incidents && data.code >= 5) {
         const isSpanish = t.headerTitle.startsWith("¿");
-        if (data.code === 5) {
-          // Forecast to close
-          description = isSpanish
-            ? `Previsión de cierre de ${data.incidents}.`
-            : `Forecast to close from ${data.incidents.replace(" a ", " to ")}.`;
-        } else {
-          // Code 6: Closed
-          description = isSpanish
-            ? `Cerrado por alerta meteorológica (${data.incidents}).`
-            : `Closed due to weather alert (${data.incidents.replace(
-                " a ",
-                "–"
-              )}).`;
-        }
+        // Treat both closing (5) and closed (6) as closed
+        description = isSpanish
+          ? `Cerrado por alerta meteorológica (${data.incidents}).`
+          : `Closed due to weather alert (${data.incidents.replace(
+              " a ",
+              "–"
+            )}).`;
       } else {
         description = t.status[code].description;
       }

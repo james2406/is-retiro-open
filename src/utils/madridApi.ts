@@ -16,6 +16,14 @@ interface MadridAPIResponse {
   features?: MadridAPIFeature[];
 }
 
+/**
+ * Maps the Madrid API alert code to a StatusType.
+ *
+ * Status Mapping Update (Jan 2026):
+ * Empirical evidence shows Code 5 ("Previsión Roja") results in actual park closure (gates locked).
+ * While the API distinguishes between 5 (Standard Red Alert) and 6 (Emergency/Weather),
+ * both result in the park being closed to the public.
+ */
 function getStatusType(code: number): StatusType {
   switch (code) {
     case 1:
@@ -24,15 +32,21 @@ function getStatusType(code: number): StatusType {
       return "open";
     case 4:
       return "restricted";
-    case 5:
-      return "closing";
-    case 6:
+    case 5: // Standard Red Alert (Closure)
+    case 6: // Emergency/Weather Closure
       return "closed";
     default:
       return "open";
   }
 }
 
+/**
+ * Fetches a URL with retry logic and exponential backoff.
+ * @param url The URL to fetch.
+ * @param retries Number of retry attempts (default: 3).
+ * @returns The Response object if successful.
+ * @throws Error if all retries fail.
+ */
 export async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
   for (let attempt = 0; attempt < retries; attempt++) {
     const controller = new AbortController();
@@ -60,6 +74,11 @@ export async function fetchWithRetry(url: string, retries = 3): Promise<Response
   throw new Error("Max retries exceeded");
 }
 
+/**
+ * Fetches the current status of El Retiro Park from the Madrid API.
+ * Parses the response and maps it to our internal data model.
+ * @returns Promise resolving to the RetiroStatus object.
+ */
 export async function fetchRetiroStatus(): Promise<RetiroStatus> {
   const params = new URLSearchParams({
     where: "1=1",
@@ -94,11 +113,16 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
     message: "Estado actual del parque",
     incidents: HORARIO_INCIDENCIA || null,
     observations: OBSERVACIONES || null,
-    // Ensure we use Madrid time for consistency
+    // Store as UTC ISO string; display layer converts to Europe/Madrid timezone
     updated_at: new Date().toISOString(),
   };
 }
 
+/**
+ * Generates mock data for testing or when the API is unreachable.
+ * @param code Optional specific alert code to force.
+ * @returns Mocked RetiroStatus object.
+ */
 export function getMockData(code?: number): RetiroStatus {
   let mockCode = code ?? Math.floor(Math.random() * 6) + 1;
   
@@ -112,7 +136,7 @@ export function getMockData(code?: number): RetiroStatus {
     2: "Incidencias en algunas zonas",
     3: "Alerta amarilla por viento",
     4: "Alerta naranja - Eventos suspendidos",
-    5: "Previsión de cierre por tormenta",
+    5: "Cerrado por condiciones meteorológicas",
     6: "Cerrado por condiciones meteorológicas",
   };
 
