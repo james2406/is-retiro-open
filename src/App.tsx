@@ -56,17 +56,6 @@ function App({ initialData = null, initialLocale }: AppProps) {
       className="min-h-screen flex flex-col relative"
       style={{ backgroundColor: theme.bgColor }}
     >
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div
-          className="absolute -top-1/4 -right-1/4 w-3/4 h-3/4 rounded-full opacity-[0.07] blur-3xl animate-float"
-          style={{ backgroundColor: theme.textColor }}
-        />
-        <div
-          className="absolute -bottom-1/4 -left-1/4 w-3/4 h-3/4 rounded-full opacity-[0.07] blur-3xl animate-float-delayed"
-          style={{ backgroundColor: theme.textColor }}
-        />
-      </div>
 
       {/* Main Content Container */}
       <div className="relative z-10 flex flex-col min-h-screen">
