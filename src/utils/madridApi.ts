@@ -113,7 +113,7 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
     message: "Estado actual del parque",
     incidents: HORARIO_INCIDENCIA || null,
     observations: OBSERVACIONES || null,
-    // Ensure we use Madrid time for consistency
+    // Store as UTC ISO string; display layer converts to Europe/Madrid timezone
     updated_at: new Date().toISOString(),
   };
 }

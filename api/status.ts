@@ -25,7 +25,7 @@ const RETIRO_API_URL =
  * While the API distinguishes between 5 (Standard Red Alert) and 6 (Emergency/Weather),
  * both result in the park being closed to the public.
  */
-function getStatusType(code: number): string {
+function getStatusType(code: number): "open" | "restricted" | "closed" {
   switch (code) {
     case 1:
     case 2:
@@ -47,7 +47,13 @@ function getStatusType(code: number): string {
  * @returns Mocked RetiroStatus object.
  */
 function getMockData(code?: number) {
-  const mockCode = code ?? Math.floor(Math.random() * 6) + 1;
+  let mockCode = code ?? Math.floor(Math.random() * 6) + 1;
+
+  // Validate and clamp mockCode to be within valid range 1-6
+  if (isNaN(mockCode) || mockCode < 1 || mockCode > 6) {
+    mockCode = 1;
+  }
+
   const messages: Record<number, string> = {
     1: "Abierto según horario habitual",
     2: "Incidencias en algunas zonas",
