@@ -64,14 +64,14 @@ graph LR
 **Timezone Rule:** All time displays must be strictly formatted in
 **Europe/Madrid** time, regardless of the user's local device time.
 
-| API Code | Meaning         | UI State (Big Text)      | Theme Color              | Text Color | UI Description (ES/EN)                                                                                                             |
-| -------- | --------------- | ------------------------ | ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **1**    | Abierto         | **ABIERTO / OPEN**       | **Green** (`#2ECC71`)    | White      | Abierto en horario habitual.<br>_Open regular hours._                                                                              |
-| **2**    | Incidencias     | **ABIERTO\* / OPEN\***   | **Blue** (`#3498DB`)     | White      | **Incidencias:** [Display `OBSERVACIONES` field].<br>_Incidents reported._                                                         |
-| **3**    | Alerta Amarilla | **ABIERTO\* / OPEN\***   | **Yellow** (`#F1C40F`)   | **Black**  | **Precaución:** Zonas infantiles y deportivas restringidas.<br>_Caution: Restricted access to specific zones._                     |
-| **4**    | Alerta Naranja  | **ABIERTO\* / OPEN\***   | **Orange** (`#E67E22`)   | White      | **Eventos suspendidos.** Se recomienda no permanecer en el parque.<br>_Events suspended. Recommendation: Do not stay in the park._ |
-| **5**    | Previsión Roja  | **CERRADO / CLOSED**     | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Standard Red Alert)._                                |
-| **6**    | Cerrado         | **CERRADO / CLOSED**     | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Emergency Closure)._                                 |
+| API Code | Meaning         | UI State (Big Text)    | Theme Color              | Text Color | UI Description (ES/EN)                                                                                                             |
+| -------- | --------------- | ---------------------- | ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **1**    | Abierto         | **ABIERTO / OPEN**     | **Green** (`#2ECC71`)    | White      | Abierto en horario habitual.<br>_Open regular hours._                                                                              |
+| **2**    | Incidencias     | **ABIERTO\* / OPEN\*** | **Blue** (`#3498DB`)     | White      | **Incidencias:** [Display `OBSERVACIONES` field].<br>_Incidents reported._                                                         |
+| **3**    | Alerta Amarilla | **ABIERTO\* / OPEN\*** | **Yellow** (`#F1C40F`)   | **Black**  | **Precaución:** Zonas infantiles y deportivas restringidas.<br>_Caution: Restricted access to specific zones._                     |
+| **4**    | Alerta Naranja  | **ABIERTO\* / OPEN\*** | **Orange** (`#E67E22`)   | White      | **Eventos suspendidos.** Se recomienda no permanecer en el parque.<br>_Events suspended. Recommendation: Do not stay in the park._ |
+| **5**    | Previsión Roja  | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Standard Red Alert)._                                |
+| **6**    | Cerrado         | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Emergency Closure)._                                 |
 
 > **Note on Code 5:** Historically treated as "Closing", empirical evidence
 > confirms that Code 5 represents a standard "Red Alert" where gates are locked
@@ -235,7 +235,7 @@ desired—but keeping it enables easy regeneration.
 #### 7.3.2 Prerender Updates (`prerender.ts`)
 
 ```typescript
-const SITE_URL = "https://isretiroopen.com";
+const SITE_URL = "https://www.estaabiertoelretiro.com";
 
 const OG_STATUS: Record<number, { es: string; en: string }> = {
   1: { es: "ABIERTO", en: "OPEN" },

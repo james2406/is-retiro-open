@@ -9,7 +9,7 @@ const toAbsolute = (p: string) => path.resolve(__dirname, p);
 const LOCALES = ["es", "en"] as const;
 type Locale = (typeof LOCALES)[number];
 
-const SITE_URL = "https://isretiroopen.com";
+const SITE_URL = "https://www.estaabiertoelretiro.com";
 
 // Simple meta descriptions for SEO
 const META_DESCRIPTIONS: Record<Locale, string> = {
