@@ -235,7 +235,7 @@ desired—but keeping it enables easy regeneration.
 #### 7.3.2 Prerender Updates (`prerender.ts`)
 
 ```typescript
-const SITE_URL = "https://isretiroopen.com";
+const SITE_URL = "https://www.estaabiertoelretiro.com";
 
 const OG_STATUS: Record<number, { es: string; en: string }> = {
   1: { es: "ABIERTO", en: "OPEN" },
