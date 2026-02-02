@@ -120,6 +120,10 @@ async function prerender() {
 
     // Replace Open Graph placeholders
     const code = statusData.code;
+    if (!(code in OG_DESCRIPTIONS)) {
+      console.error(`CRITICAL: Unexpected status code ${code} from API`);
+      process.exit(1);
+    }
     const ogImage = `${SITE_URL}/og/${locale}-${code}.png`;
 
     html = html
