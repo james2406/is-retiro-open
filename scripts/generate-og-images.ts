@@ -10,6 +10,10 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.resolve(__dirname, "../public/og");
 
+// Inter fonts (Apache 2.0 licensed, from https://github.com/rsms/inter)
+const INTER_BOLD_PATH = path.resolve(__dirname, "../fonts/Inter-Bold.ttf");
+const INTER_BLACK_PATH = path.resolve(__dirname, "../fonts/Inter-Black.ttf");
+
 // Image dimensions (Open Graph standard)
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -40,10 +44,7 @@ const STATUS_TEXT: Record<number, Record<string, string>> = {
   6: { es: "CERRADO", en: "CLOSED" },
 };
 
-function generateImage(
-  locale: string,
-  statusCode: number
-): Buffer {
+function generateImage(locale: string, statusCode: number): Buffer {
   const theme = STATUS_THEMES[statusCode];
   const title = TITLES[locale];
   const statusText = STATUS_TEXT[statusCode][locale];
@@ -60,22 +61,35 @@ function generateImage(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
-  // Draw title (smaller text at top)
-  ctx.font = "bold 48px sans-serif";
-  ctx.fillText(title, WIDTH / 2, HEIGHT * 0.35);
+  // Status text is vertically centered
+  const statusY = HEIGHT / 2 + 40;
 
-  // Draw status text (large text in center)
-  ctx.font = "bold 180px sans-serif";
-  ctx.fillText(statusText, WIDTH / 2, HEIGHT * 0.65);
+  // Title sits between top and status text
+  const titleY = statusY / 2;
+
+  // Draw title with tracking-wide (0.025em) to match site header
+  ctx.font = "bold 48px Inter";
+  (ctx as any).letterSpacing = "0.025em";
+  ctx.fillText(title, WIDTH / 2, titleY);
+
+  // Draw status text in center
+  // Use Inter Black (weight 900) + tracking-tighter (-0.05em) to match site's font-black class
+  ctx.font = "180px 'Inter Black'";
+  (ctx as any).letterSpacing = "-0.05em";
+  ctx.fillText(statusText, WIDTH / 2, statusY);
 
   return canvas.toBuffer("image/png");
 }
 
-async function main() {
+function main() {
   // Ensure output directory exists
   if (!fs.existsSync(OUTPUT_DIR)) {
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
   }
+
+  // Register Inter fonts
+  registerFont(INTER_BOLD_PATH, { family: "Inter", weight: "bold" });
+  registerFont(INTER_BLACK_PATH, { family: "Inter Black" });
 
   const locales = ["es", "en"];
   const statusCodes = [1, 2, 3, 4, 5, 6];
@@ -97,4 +111,4 @@ async function main() {
   console.log(`\nDone! Generated ${locales.length * statusCodes.length} images in ${OUTPUT_DIR}`);
 }
 
-main().catch(console.error);
+main();

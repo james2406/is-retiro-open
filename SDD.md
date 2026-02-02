@@ -193,6 +193,7 @@ implementation of the HTML Canvas API). This approach:
 
 - Requires no external tools (ImageMagick, etc.)
 - Ensures consistency with theme colors defined in code
+- Uses Inter font to match the site's system-ui aesthetic
 - Makes regeneration trivial if colors or text change
 
 ```bash
@@ -202,6 +203,10 @@ npm run generate-og
 The script (`scripts/generate-og-images.ts`) reads theme colors from the same
 constants used by the app and generates all 12 images. Generated images are
 committed to the repo.
+
+**Font:** Inter Bold (Apache 2.0 licensed) is bundled in `fonts/` to ensure
+consistent rendering across build environments. Inter closely matches the
+`system-ui` font stack used on the site.
 
 **Note:** The `canvas` package is included as a devDependency solely for this
 script. Since images are generated once and committed, it can be removed if
@@ -289,6 +294,7 @@ html = html
 | `public/og/*.png`               | Create | 12 static images (1200×630)           |
 | `prerender.ts`                  | Modify | Select correct image, replace tags    |
 | `scripts/generate-og-images.ts` | Create | Canvas-based image generation script  |
+| `fonts/Inter-Bold.ttf`          | Create | Inter font for OG images (Apache 2.0) |
 | `package.json`                  | Modify | Add `generate-og` script              |
 
 **Dependencies:** `canvas` (devDependency) — provides Node.js Canvas API for
