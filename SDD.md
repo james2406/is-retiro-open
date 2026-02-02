@@ -155,16 +155,16 @@ caching strategies, and runtime failure modes.
 
 ```
 public/og/
-├── es-1.png   # Green, "SÍ"
-├── es-2.png   # Blue, "SÍ"
-├── es-3.png   # Yellow, "SÍ"
-├── es-4.png   # Orange, "RESTRINGIDO"
+├── es-1.png   # Green, "ABIERTO"
+├── es-2.png   # Blue, "ABIERTO*"
+├── es-3.png   # Yellow, "ABIERTO*"
+├── es-4.png   # Orange, "ABIERTO*"
 ├── es-5.png   # Red, "CERRADO"
 ├── es-6.png   # Red, "CERRADO"
-├── en-1.png   # Green, "YES"
-├── en-2.png   # Blue, "YES"
-├── en-3.png   # Yellow, "YES"
-├── en-4.png   # Orange, "RESTRICTED"
+├── en-1.png   # Green, "OPEN"
+├── en-2.png   # Blue, "OPEN*"
+├── en-3.png   # Yellow, "OPEN*"
+├── en-4.png   # Orange, "OPEN*"
 ├── en-5.png   # Red, "CLOSED"
 └── en-6.png   # Red, "CLOSED"
 ```
@@ -178,14 +178,34 @@ Each image is 1200×630px with the layout:
 │              ¿Está abierto el Retiro?                       │
 │                       (48px)                                │
 │                                                             │
-│                          SÍ                                 │
+│                       ABIERTO                               │
 │                      (180px bold)                           │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-Colors match `STATUS_THEMES` from Section 3.2. Images are generated once using
-any design tool (Figma, Canva, ImageMagick, etc.) and committed to the repo.
+Colors match `STATUS_THEMES` from Section 3.2.
+
+#### 7.2.1 Image Generation Script
+
+Images are generated programmatically using the `canvas` package (a Node.js
+implementation of the HTML Canvas API). This approach:
+
+- Requires no external tools (ImageMagick, etc.)
+- Ensures consistency with theme colors defined in code
+- Makes regeneration trivial if colors or text change
+
+```bash
+npm run generate-og
+```
+
+The script (`scripts/generate-og-images.ts`) reads theme colors from the same
+constants used by the app and generates all 12 images. Generated images are
+committed to the repo.
+
+**Note:** The `canvas` package is included as a devDependency solely for this
+script. Since images are generated once and committed, it can be removed if
+desired—but keeping it enables easy regeneration.
 
 ### 7.3 Implementation
 
@@ -213,10 +233,10 @@ any design tool (Figma, Canva, ImageMagick, etc.) and committed to the repo.
 const SITE_URL = "https://isretiroopen.com";
 
 const OG_STATUS: Record<number, { es: string; en: string }> = {
-  1: { es: "SÍ", en: "YES" },
-  2: { es: "SÍ", en: "YES" },
-  3: { es: "SÍ", en: "YES" },
-  4: { es: "RESTRINGIDO", en: "RESTRICTED" },
+  1: { es: "ABIERTO", en: "OPEN" },
+  2: { es: "ABIERTO*", en: "OPEN*" },
+  3: { es: "ABIERTO*", en: "OPEN*" },
+  4: { es: "ABIERTO*", en: "OPEN*" },
   5: { es: "CERRADO", en: "CLOSED" },
   6: { es: "CERRADO", en: "CLOSED" },
 };
@@ -263,13 +283,16 @@ html = html
 
 ### 7.4 File Changes
 
-| File              | Action | Description                        |
-| ----------------- | ------ | ---------------------------------- |
-| `index.html`      | Modify | Add OG meta tag placeholders       |
-| `public/og/*.png` | Create | 12 static images (1200×630, once)  |
-| `prerender.ts`    | Modify | Select correct image, replace tags |
+| File                            | Action | Description                           |
+| ------------------------------- | ------ | ------------------------------------- |
+| `index.html`                    | Modify | Add OG meta tag placeholders          |
+| `public/og/*.png`               | Create | 12 static images (1200×630)           |
+| `prerender.ts`                  | Modify | Select correct image, replace tags    |
+| `scripts/generate-og-images.ts` | Create | Canvas-based image generation script  |
+| `package.json`                  | Modify | Add `generate-og` script              |
 
-No new dependencies required.
+**Dependencies:** `canvas` (devDependency) — provides Node.js Canvas API for
+image generation without requiring external tools.
 
 ### 7.5 Testing
 
