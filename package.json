@@ -33,6 +33,7 @@
     "@types/react-dom": "^19.2.3",
     "@vercel/node": "^5.5.28",
     "@vitejs/plugin-react": "^5.1.2",
+    "canvas": "^3.2.1",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
