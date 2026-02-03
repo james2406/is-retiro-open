@@ -14,14 +14,20 @@ interface StatusCardProps {
 
 /**
  * Parses a date string in DD/MM/YYYY format and returns a Date object.
+ * Returns null if the date is invalid.
  */
 function parseSourceDate(dateStr: string): Date | null {
-  try {
-    const [day, month, year] = dateStr.split("/").map(Number);
-    return new Date(year, month - 1, day);
-  } catch {
-    return null;
-  }
+  const parts = dateStr.split("/");
+  if (parts.length !== 3) return null;
+
+  const [day, month, year] = parts.map(Number);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+
+  const date = new Date(year, month - 1, day);
+  // Validate the date is real (e.g., not Feb 31)
+  if (isNaN(date.getTime())) return null;
+
+  return date;
 }
 
 /**

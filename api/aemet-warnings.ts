@@ -43,26 +43,26 @@ function extractXmlTag(xml: string, tag: string): string | undefined {
  */
 function parseCapXml(xml: string): AemetWarning[] {
   const warnings: AemetWarning[] = [];
-  
+
   // Split by <info> blocks - each contains one warning
   const infoBlocks = xml.split(/<info>/i).slice(1);
-  
+
   for (const block of infoBlocks) {
     // Extract event type code from eventCode
     const eventCodeMatch = block.match(/<eventCode>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/eventCode>/i);
     const fenomeno = eventCodeMatch ? eventCodeMatch[1].trim() : undefined;
-    
+
     // Extract zone/geocode
     const geocodeMatch = block.match(/<geocode>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/geocode>/i);
     const zona = geocodeMatch ? geocodeMatch[1].trim() : undefined;
-    
+
     // Extract timing
     const onset = extractXmlTag(block, 'onset');
     const expires = extractXmlTag(block, 'expires');
-    
+
     // Extract severity/level
     const severity = extractXmlTag(block, 'severity');
-    
+
     warnings.push({
       fenomeno,
       zona,
@@ -71,7 +71,7 @@ function parseCapXml(xml: string): AemetWarning[] {
       nivel: severity?.toLowerCase(),
     });
   }
-  
+
   return warnings;
 }
 
@@ -80,17 +80,17 @@ function parseCapXml(xml: string): AemetWarning[] {
  */
 function isWarningActive(warning: AemetWarning): boolean {
   const now = new Date();
-  
+
   if (warning.onset) {
     const onset = new Date(warning.onset);
     if (onset > now) return false; // Not yet started
   }
-  
+
   if (warning.expires) {
     const expires = new Date(warning.expires);
     if (expires < now) return false; // Already expired
   }
-  
+
   return true;
 }
 
@@ -106,7 +106,7 @@ function isWarningActive(warning: AemetWarning): boolean {
  */
 function isRelevantWarning(warning: AemetWarning): boolean {
   if (!warning.fenomeno) return false;
-  
+
   // Check zone - must be Metropolitana y Henares (where Retiro Park is)
   // 722801 = Sierra de Madrid (mountains - not relevant)
   // 722802 = Metropolitana y Henares (RETIRO IS HERE)
@@ -114,10 +114,10 @@ function isRelevantWarning(warning: AemetWarning): boolean {
   if (warning.zona !== MADRID_RETIRO_ZONE) {
     return false;
   }
-  
+
   // Extract the warning type code (before the semicolon)
   const warningCode = warning.fenomeno.split(";")[0];
-  
+
   // Check if it's wind (VI) or snow (NE)
   return RELEVANT_WARNING_PREFIXES.includes(warningCode);
 }
@@ -144,7 +144,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const apiKey = process.env.AEMET_API_KEY;
-  
+
   if (!apiKey) {
     return res.status(503).json({ error: "AEMET API key not configured" });
   }
@@ -152,7 +152,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // Step 1: Get the datos URL from AEMET API
     const url = `${AEMET_API_BASE}/avisos_cap/ultimoelaborado/area/${MADRID_AREA_CODE}`;
-    
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
@@ -186,11 +186,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // The response is a TAR archive containing CAP XML files
+    // Validate content-type to catch unexpected binary formats
+    const contentType = datosResponse.headers.get("content-type") ?? "";
     const rawText = await datosResponse.text();
-    
+
     // Extract XML documents from the tar stream
     const xmlMatches = rawText.match(/<\?xml[\s\S]*?<\/alert>/gi) || [];
-    
+
+    // Guard against binary corruption or parsing failure
+    if (xmlMatches.length === 0 && rawText.length > 0) {
+      throw new Error(
+        `No CAP XML alerts found in AEMET datos response (content-type: ${contentType}, length: ${rawText.length})`
+      );
+    }
+
     let warnings: AemetWarning[] = [];
     for (const xmlDoc of xmlMatches) {
       const parsed = parseCapXml(xmlDoc);
@@ -206,11 +215,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Cache for 15 minutes, serve stale for 30 more while revalidating
     res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=1800");
-    
+
     return res.status(200).json({ hasActiveWarning });
   } catch (error) {
     console.error("[AEMET] Error fetching warnings:", error);
-    
+
     const message = error instanceof Error ? error.message : "Unknown error";
     return res.status(502).json({ error: `AEMET API error: ${message}` });
   }

@@ -138,7 +138,7 @@ timezone), the UI shows a warning:
 This alerts users when the source data may be outdated, even though our site is
 fetching fresh data.
 
-```
+```text
 | Status shown | Stale data? | UI behavior                            |
 |--------------|-------------|----------------------------------------|
 | Code 1-6     | No          | (nothing)                              |
@@ -450,7 +450,7 @@ The AEMET OpenData API uses a two-step process:
 
 **Step 1:** Request warnings for area 72 (Comunidad de Madrid)
 
-```
+```http
 GET /avisos_cap/ultimoelaborado/area/72
 Header: api_key: {your_key}
 ```
@@ -505,9 +505,9 @@ graph LR
 1. Client loads page, React hydrates
 2. `useWeatherWarnings` hook fetches `/api/aemet-warnings`
 3. Proxy endpoint checks cache; if stale (>15 min), calls AEMET API
-4. Proxy calls `/avisos_cap/ultimoelaborado/area/61` with API key
+4. Proxy calls `/avisos_cap/ultimoelaborado/area/72` with API key
 5. Proxy fetches the `datos` URL from response
-6. Proxy filters for zone `722802` and types `VI`/`NV`
+6. Proxy filters for zone `722802` and types `VI`/`NE`
 7. Proxy checks `onset` ≤ now ≤ `expires` for active warnings
 8. Returns `{ hasActiveWarning: boolean }` to client
 9. React shows verification prompt if warning active AND park open
@@ -578,9 +578,9 @@ above.
 
 The `/api/aemet-warnings` endpoint:
 
-1. Calls AEMET API `/avisos_cap/ultimoelaborado/area/61` with API key
+1. Calls AEMET API `/avisos_cap/ultimoelaborado/area/72` with API key
 2. Fetches the `datos` URL from response to get warning data
-3. Filters warnings for zone `722802` and types `VI` (wind) or `NV` (snow)
+3. Filters warnings for zone `722802` and types `VI` (wind) or `NE` (snow)
 4. Checks `onset` ≤ now ≤ `expires` for active warnings
 5. Returns `{ hasActiveWarning: boolean }`
 6. On error, returns `{ hasActiveWarning: false }` (fail open)
