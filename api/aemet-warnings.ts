@@ -146,9 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = process.env.AEMET_API_KEY;
   
   if (!apiKey) {
-    // Fail gracefully if API key not configured
-    res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=1800");
-    return res.status(200).json({ hasActiveWarning: false });
+    return res.status(503).json({ error: "AEMET API key not configured" });
   }
 
   try {
@@ -213,8 +211,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     console.error("[AEMET] Error fetching warnings:", error);
     
-    // Fail open: return no warning on error, so core functionality continues
-    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
-    return res.status(200).json({ hasActiveWarning: false });
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return res.status(502).json({ error: `AEMET API error: ${message}` });
   }
 }
