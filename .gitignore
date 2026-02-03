@@ -45,3 +45,4 @@ coverage
 .cache
 .temp
 .tmp
+.env*.local

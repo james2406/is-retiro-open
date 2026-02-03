@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { Info, AlertTriangle } from "lucide-react";
 import type { RetiroStatus, StatusCode, StatusTheme } from "../types";
 import { STATUS_THEMES, ERROR_THEME } from "../types";
 import type { Translations } from "../i18n";
@@ -8,22 +8,57 @@ interface StatusCardProps {
   loading: boolean;
   error: string | null;
   isOffline: boolean;
+  hasActiveWarning: boolean;
   t: Translations;
 }
 
-function formatMadridTime(isoString: string, locale: string): string {
-  try {
-    const date = new Date(isoString);
-    return date.toLocaleString(locale === "es" ? "es-ES" : "en-GB", {
-      timeZone: "Europe/Madrid",
-      hour: "2-digit",
-      minute: "2-digit",
-      day: "numeric",
-      month: "short",
-    });
-  } catch {
-    return "";
-  }
+/**
+ * Parses a date string in DD/MM/YYYY format and returns a Date object.
+ * Returns null if the date is invalid.
+ */
+function parseSourceDate(dateStr: string): Date | null {
+  const parts = dateStr.split("/");
+  if (parts.length !== 3) return null;
+
+  const [day, month, year] = parts.map(Number);
+  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+
+  const date = new Date(year, month - 1, day);
+  // Validate the date is real (e.g., not Feb 31)
+  if (isNaN(date.getTime())) return null;
+
+  return date;
+}
+
+/**
+ * Checks if the source date is stale (yesterday or older) compared to today in Madrid timezone.
+ */
+function isSourceDateStale(dateStr: string | null): boolean {
+  if (!dateStr) return false;
+  
+  const sourceDate = parseSourceDate(dateStr);
+  if (!sourceDate) return false;
+  
+  // Get today's date in Madrid timezone
+  const madridNow = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const [year, month, day] = madridNow.split("-").map(Number);
+  const todayMadrid = new Date(year, month - 1, day);
+  
+  // Compare dates (source is stale if it's before today)
+  return sourceDate < todayMadrid;
+}
+
+/**
+ * Formats the source date (DD/MM/YYYY) for display.
+ */
+function formatSourceDate(dateStr: string, locale: string): string {
+  const sourceDate = parseSourceDate(dateStr);
+  if (!sourceDate) return dateStr;
+  
+  return sourceDate.toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 export function StatusCard({
@@ -31,6 +66,7 @@ export function StatusCard({
   loading,
   error,
   isOffline,
+  hasActiveWarning,
   t,
 }: StatusCardProps) {
   let theme: StatusTheme;
@@ -53,6 +89,12 @@ export function StatusCard({
       const code = data.code as StatusCode;
       theme = STATUS_THEMES[code] || STATUS_THEMES[1];
       bigText = t.status[code].big;
+
+      // Add asterisk to "ABIERTO"/"OPEN" (code 1) when weather warning is active
+      // Codes 2-4 already have asterisks in translations
+      if (hasActiveWarning && code === 1) {
+        bigText = bigText + "*";
+      }
 
       // Build description, integrating incident hours if present
       if (data.incidents && data.code >= 5) {
@@ -130,15 +172,29 @@ export function StatusCard({
             </a>
           )}
 
-          {/* Last Updated */}
-          {data?.updated_at && (
-            <p
-              className="mt-4 text-sm opacity-60"
+          {/* Weather alert verification prompt - show when warning active AND park not closed (codes 1-4) */}
+          {data && hasActiveWarning && data.code >= 1 && data.code <= 4 && (
+            <a
+              href="https://x.com/MADRID"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 flex items-center gap-3 bg-black/20 rounded-xl px-5 py-4 hover:bg-black/30 transition-colors"
               style={{ color: theme.textColor }}
             >
-              {t.updated}:{" "}
-              {formatMadridTime(
-                data.updated_at,
+              <AlertTriangle className="w-6 h-6 shrink-0" />
+              <span className="text-lg font-medium">{t.weatherAlert}</span>
+            </a>
+          )}
+
+          {/* Stale data warning - only show when data is old */}
+          {data && isSourceDateStale(data.source_updated_at) && (
+            <p
+              className="mt-4 text-sm opacity-80"
+              style={{ color: theme.textColor }}
+            >
+              {t.lastSourceUpdate}:{" "}
+              {data.source_updated_at && formatSourceDate(
+                data.source_updated_at,
                 t.headerTitle.startsWith("¿") ? "es" : "en"
               )}
             </p>

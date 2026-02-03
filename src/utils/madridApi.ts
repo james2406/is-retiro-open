@@ -6,6 +6,7 @@ interface MadridAPIFeature {
   attributes: {
     ZONA_VERDE: string;
     ALERTA_DESCRIPCION: number;
+    FECHA_INCIDENCIA: string | null;
     HORARIO_INCIDENCIA: string | null;
     OBSERVACIONES: string | null;
   };
@@ -82,7 +83,7 @@ export async function fetchWithRetry(url: string, retries = 3): Promise<Response
 export async function fetchRetiroStatus(): Promise<RetiroStatus> {
   const params = new URLSearchParams({
     where: "1=1",
-    outFields: "ZONA_VERDE,ALERTA_DESCRIPCION,HORARIO_INCIDENCIA,OBSERVACIONES",
+    outFields: "ZONA_VERDE,ALERTA_DESCRIPCION,FECHA_INCIDENCIA,HORARIO_INCIDENCIA,OBSERVACIONES",
     f: "json",
   });
 
@@ -103,7 +104,7 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
     throw new Error("Retiro park data not found in API response");
   }
 
-  const { ALERTA_DESCRIPCION, HORARIO_INCIDENCIA, OBSERVACIONES } =
+  const { ALERTA_DESCRIPCION, FECHA_INCIDENCIA, HORARIO_INCIDENCIA, OBSERVACIONES } =
     retiroFeature.attributes;
   const alertCode = ALERTA_DESCRIPCION || 1;
 
@@ -115,6 +116,8 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
     observations: OBSERVACIONES || null,
     // Store as UTC ISO string; display layer converts to Europe/Madrid timezone
     updated_at: new Date().toISOString(),
+    // Date when Madrid last updated the alert (format: "DD/MM/YYYY")
+    source_updated_at: FECHA_INCIDENCIA || null,
   };
 }
 
@@ -140,6 +143,10 @@ export function getMockData(code?: number): RetiroStatus {
     6: "Cerrado por condiciones meteorológicas",
   };
 
+  // Format today's date as DD/MM/YYYY for mock data
+  const today = new Date();
+  const mockSourceDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
   return {
     status: getStatusType(mockCode),
     code: mockCode as StatusCode,
@@ -147,5 +154,6 @@ export function getMockData(code?: number): RetiroStatus {
     incidents: mockCode >= 5 ? "14:00 a 20:00" : null,
     observations: mockCode === 2 ? "Obras en la zona del estanque" : null,
     updated_at: new Date().toISOString(),
+    source_updated_at: mockSourceDate,
   };
 }
