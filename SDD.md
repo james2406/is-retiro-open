@@ -400,8 +400,8 @@ warned but the park API hasn't updated yet.
 
 - **Base URL:** `https://opendata.aemet.es/opendata/api`
 - **Endpoint:** `/avisos_cap/ultimoelaborado/area/{areaId}`
-- **Area ID:** `61` (Comunidad de Madrid)
-- **Format:** JSON response with URL to warning data
+- **Area ID:** `72` (Comunidad de Madrid)
+- **Format:** JSON response with URL to TAR archive of CAP XML files
 - **CORS:** Not enabled (requires server-side proxy)
 - **API Key:** Free, register at
   https://opendata.aemet.es/centrodedescargas/altaUsuario
@@ -415,8 +415,11 @@ warned but the park API hasn't updated yet.
 
 #### Madrid Identifiers
 
-- **Area Code:** `61` (Comunidad de Madrid - used in API)
-- **Zone Code:** `722802` (Metropolitana y Henares - used in warning data)
+- **Area Code:** `72` (Comunidad de Madrid - used in API endpoint)
+- **Zone Codes for Madrid:**
+  - `722801` = Sierra de Madrid (mountains - not relevant for Retiro)
+  - `722802` = Metropolitana y Henares (**Retiro Park is here**)
+  - `722803` = Sur, Vegas y Oeste (southern suburbs - not relevant for Retiro)
 
 #### Relevant Warning Types
 
@@ -425,7 +428,7 @@ Wind and snow warnings are the primary triggers per the park protocol:
 | Code   | Type           | Relevance                                  |
 | ------ | -------------- | ------------------------------------------ |
 | **VI** | Vientos (Wind) | Primary - directly triggers park protocol  |
-| **NV** | Nevadas (Snow) | Secondary - rare in Madrid but in protocol |
+| **NE** | Nevadas (Snow) | Secondary - rare in Madrid but in protocol |
 
 Other warning types and why they're not checked:
 
@@ -445,10 +448,10 @@ effectively covers heat scenarios.
 
 The AEMET OpenData API uses a two-step process:
 
-**Step 1:** Request warnings for area 61 (Madrid)
+**Step 1:** Request warnings for area 72 (Comunidad de Madrid)
 
 ```
-GET /avisos_cap/ultimoelaborado/area/61
+GET /avisos_cap/ultimoelaborado/area/72
 Header: api_key: {your_key}
 ```
 
@@ -466,15 +469,12 @@ Response:
 **Step 2:** Fetch the `datos` URL to get actual warning data (CAP format or
 JSON)
 
-The warning data includes:
+The warning data is a TAR archive containing CAP (Common Alerting Protocol) XML files. Each XML file contains `<info>` blocks with:
 
 - `onset` / `expires`: Warning validity period (check if currently active)
-- `nivel`: amarillo / naranja / rojo
-- `fenomeno`: VI (wind), NV (snow), etc.
-- `zona`: 722802 for Madrid Metropolitana
-
-**Note:** Actual response format should be verified with a real API key. The
-proxy implementation may need adjustment based on actual response structure.
+- `severity`: Minor / Moderate / Severe / Extreme
+- `eventCode > value`: VI (wind), NE (snow), etc.
+- `geocode > value`: 722802 for Madrid Metropolitana
 
 ### 8.4 Architecture
 

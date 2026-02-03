@@ -1,15 +1,14 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 /**
- * AEMET Warning response structure from the datos URL
- * Note: Actual structure should be verified with real API key
+ * AEMET Warning response structure parsed from CAP XML
  */
 interface AemetWarning {
   onset?: string;
   expires?: string;
-  nivel?: string; // amarillo, naranja, rojo
-  fenomeno?: string; // VI (wind), NV (snow), etc.
-  zona?: string; // Zone code
+  nivel?: string; // severity level
+  fenomeno?: string; // VI (wind), NE (snow), etc.
+  zona?: string; // Zone code (e.g., 722802)
 }
 
 interface AemetInitialResponse {
@@ -20,9 +19,61 @@ interface AemetInitialResponse {
 }
 
 const AEMET_API_BASE = "https://opendata.aemet.es/opendata/api";
-const MADRID_AREA_CODE = "61";
-const MADRID_METRO_ZONE = "722802";
-const RELEVANT_WARNING_TYPES = ["VI", "NV"]; // Wind and Snow
+// Area 72 = Comunidad de Madrid
+const MADRID_AREA_CODE = "72";
+// Wind (VI;Vientos) and Snow (NE;Nevadas) - these are the codes that trigger park closures
+const RELEVANT_WARNING_PREFIXES = ["VI", "NE"];
+// Zone code for Madrid metropolitan area where Retiro Park is located
+// Madrid zones: 722801=Sierra, 722802=Metropolitana y Henares, 722803=Sur/Vegas/Oeste
+// Retiro Park is in the "Metropolitana y Henares" zone
+const MADRID_RETIRO_ZONE = "722802";
+
+/**
+ * Simple XML text extraction helper
+ */
+function extractXmlTag(xml: string, tag: string): string | undefined {
+  const regex = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, 'i');
+  const match = xml.match(regex);
+  return match ? match[1].trim() : undefined;
+}
+
+/**
+ * Parse CAP XML format into our warning structure
+ * CAP = Common Alerting Protocol used by AEMET
+ */
+function parseCapXml(xml: string): AemetWarning[] {
+  const warnings: AemetWarning[] = [];
+  
+  // Split by <info> blocks - each contains one warning
+  const infoBlocks = xml.split(/<info>/i).slice(1);
+  
+  for (const block of infoBlocks) {
+    // Extract event type code from eventCode
+    const eventCodeMatch = block.match(/<eventCode>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/eventCode>/i);
+    const fenomeno = eventCodeMatch ? eventCodeMatch[1].trim() : undefined;
+    
+    // Extract zone/geocode
+    const geocodeMatch = block.match(/<geocode>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/geocode>/i);
+    const zona = geocodeMatch ? geocodeMatch[1].trim() : undefined;
+    
+    // Extract timing
+    const onset = extractXmlTag(block, 'onset');
+    const expires = extractXmlTag(block, 'expires');
+    
+    // Extract severity/level
+    const severity = extractXmlTag(block, 'severity');
+    
+    warnings.push({
+      fenomeno,
+      zona,
+      onset,
+      expires,
+      nivel: severity?.toLowerCase(),
+    });
+  }
+  
+  return warnings;
+}
 
 /**
  * Checks if a warning is currently active based on onset/expires times
@@ -44,20 +95,31 @@ function isWarningActive(warning: AemetWarning): boolean {
 }
 
 /**
- * Checks if a warning is relevant (wind or snow for Madrid Metro zone)
+ * Checks if a warning is relevant (wind or snow for Retiro Park area)
+ * 
+ * We filter by:
+ * 1. Zone - must be "Metropolitana y Henares" (722802) where Retiro Park is located
+ *    Sierra (722801) and Sur/Vegas/Oeste (722803) warnings are NOT relevant for Retiro
+ * 2. Warning type - must be wind (VI) or snow (NE)
+ * 
+ * The fenomeno field format is "CODE;Description" e.g. "VI;Vientos", "NE;Nevadas"
  */
 function isRelevantWarning(warning: AemetWarning): boolean {
-  // Check zone - must be Madrid Metropolitana
-  if (warning.zona && !warning.zona.includes(MADRID_METRO_ZONE)) {
+  if (!warning.fenomeno) return false;
+  
+  // Check zone - must be Metropolitana y Henares (where Retiro Park is)
+  // 722801 = Sierra de Madrid (mountains - not relevant)
+  // 722802 = Metropolitana y Henares (RETIRO IS HERE)
+  // 722803 = Sur, Vegas y Oeste (southern suburbs - not relevant)
+  if (warning.zona !== MADRID_RETIRO_ZONE) {
     return false;
   }
   
-  // Check warning type - must be wind (VI) or snow (NV)
-  if (warning.fenomeno && !RELEVANT_WARNING_TYPES.includes(warning.fenomeno)) {
-    return false;
-  }
+  // Extract the warning type code (before the semicolon)
+  const warningCode = warning.fenomeno.split(";")[0];
   
-  return true;
+  // Check if it's wind (VI) or snow (NE)
+  return RELEVANT_WARNING_PREFIXES.includes(warningCode);
 }
 
 /**
@@ -84,24 +146,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const apiKey = process.env.AEMET_API_KEY;
   
   if (!apiKey) {
-    console.warn("AEMET_API_KEY not configured, returning no warning");
-    // Set cache headers even for missing config
+    // Fail gracefully if API key not configured
     res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=1800");
     return res.status(200).json({ hasActiveWarning: false });
   }
 
   try {
-    // Step 1: Request warnings for area 61 (Madrid)
+    // Step 1: Get the datos URL from AEMET API
+    const url = `${AEMET_API_BASE}/avisos_cap/ultimoelaborado/area/${MADRID_AREA_CODE}`;
+    
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8000);
 
-    const initialResponse = await fetch(
-      `${AEMET_API_BASE}/avisos_cap/ultimoelaborado/area/${MADRID_AREA_CODE}`,
-      {
-        headers: { api_key: apiKey },
-        signal: controller.signal,
-      }
-    );
+    const initialResponse = await fetch(url, {
+      headers: { api_key: apiKey },
+      signal: controller.signal,
+    });
     clearTimeout(timeout);
 
     if (!initialResponse.ok) {
@@ -114,7 +174,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`AEMET API error: ${initialData.descripcion || "Unknown error"}`);
     }
 
-    // Step 2: Fetch the datos URL to get actual warning data
+    // Step 2: Fetch the datos URL to get actual warning data (TAR of CAP XML files)
     const datosController = new AbortController();
     const datosTimeout = setTimeout(() => datosController.abort(), 8000);
 
@@ -127,24 +187,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(`AEMET datos URL responded with status ${datosResponse.status}`);
     }
 
-    const warnings: AemetWarning[] = await datosResponse.json();
+    // The response is a TAR archive containing CAP XML files
+    const rawText = await datosResponse.text();
+    
+    // Extract XML documents from the tar stream
+    const xmlMatches = rawText.match(/<\?xml[\s\S]*?<\/alert>/gi) || [];
+    
+    let warnings: AemetWarning[] = [];
+    for (const xmlDoc of xmlMatches) {
+      const parsed = parseCapXml(xmlDoc);
+      warnings.push(...parsed);
+    }
 
-    // Step 3: Filter for relevant, active warnings
-    const activeWarnings = warnings.filter(
-      (w) => isRelevantWarning(w) && isWarningActive(w)
-    );
+    // Filter for relevant (wind/snow in Retiro zone) and currently active warnings
+    const activeWarnings = warnings.filter((w) => {
+      return isRelevantWarning(w) && isWarningActive(w);
+    });
 
     const hasActiveWarning = activeWarnings.length > 0;
 
-    // Set cache headers: 15 minutes at edge, serve stale for 30 more while revalidating
+    // Cache for 15 minutes, serve stale for 30 more while revalidating
     res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=1800");
     
     return res.status(200).json({ hasActiveWarning });
   } catch (error) {
-    console.error("Error fetching AEMET warnings:", error);
+    console.error("[AEMET] Error fetching warnings:", error);
     
     // Fail open: return no warning on error, so core functionality continues
-    // Set cache headers even on error to prevent hammering AEMET
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
     return res.status(200).json({ hasActiveWarning: false });
   }
