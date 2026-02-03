@@ -9,6 +9,8 @@ export interface RetiroStatus {
   incidents: string | null;
   observations: string | null;
   updated_at: string;
+  /** Date when Madrid last updated the alert (format: "DD/MM/YYYY" from FECHA_INCIDENCIA) */
+  source_updated_at: string | null;
 }
 
 export interface StatusTheme {

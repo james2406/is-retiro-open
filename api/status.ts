@@ -4,6 +4,7 @@ interface MadridAPIFeature {
   attributes: {
     ZONA_VERDE: string;
     ALERTA_DESCRIPCION: number;
+    FECHA_INCIDENCIA: string | null;
     HORARIO_INCIDENCIA: string | null;
     OBSERVACIONES: string | null;
   };
@@ -63,6 +64,10 @@ function getMockData(code?: number) {
     6: "Cerrado por condiciones meteorológicas",
   };
 
+  // Format today's date as DD/MM/YYYY for mock data
+  const today = new Date();
+  const mockSourceDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
   return {
     status: getStatusType(mockCode),
     code: mockCode,
@@ -70,6 +75,7 @@ function getMockData(code?: number) {
     incidents: mockCode >= 5 ? "14:00 a 20:00" : null,
     observations: mockCode === 2 ? "Obras en la zona del estanque" : null,
     updated_at: new Date().toISOString(),
+    source_updated_at: mockSourceDate,
   };
 }
 
@@ -98,7 +104,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const params = new URLSearchParams({
       where: "1=1",
       outFields:
-        "ZONA_VERDE,ALERTA_DESCRIPCION,HORARIO_INCIDENCIA,OBSERVACIONES",
+        "ZONA_VERDE,ALERTA_DESCRIPCION,FECHA_INCIDENCIA,HORARIO_INCIDENCIA,OBSERVACIONES",
       f: "json",
     });
 
@@ -129,7 +135,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error("Retiro park data not found");
     }
 
-    const { ALERTA_DESCRIPCION, HORARIO_INCIDENCIA, OBSERVACIONES } =
+    const { ALERTA_DESCRIPCION, FECHA_INCIDENCIA, HORARIO_INCIDENCIA, OBSERVACIONES } =
       retiroFeature.attributes;
     const alertCode = ALERTA_DESCRIPCION || 1;
 
@@ -140,6 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       incidents: HORARIO_INCIDENCIA || null,
       observations: OBSERVACIONES || null,
       updated_at: new Date().toISOString(),
+      source_updated_at: FECHA_INCIDENCIA || null,
     };
 
     // Set cache headers

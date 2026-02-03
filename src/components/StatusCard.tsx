@@ -11,19 +11,47 @@ interface StatusCardProps {
   t: Translations;
 }
 
-function formatMadridTime(isoString: string, locale: string): string {
+/**
+ * Parses a date string in DD/MM/YYYY format and returns a Date object.
+ */
+function parseSourceDate(dateStr: string): Date | null {
   try {
-    const date = new Date(isoString);
-    return date.toLocaleString(locale === "es" ? "es-ES" : "en-GB", {
-      timeZone: "Europe/Madrid",
-      hour: "2-digit",
-      minute: "2-digit",
-      day: "numeric",
-      month: "short",
-    });
+    const [day, month, year] = dateStr.split("/").map(Number);
+    return new Date(year, month - 1, day);
   } catch {
-    return "";
+    return null;
   }
+}
+
+/**
+ * Checks if the source date is stale (yesterday or older) compared to today in Madrid timezone.
+ */
+function isSourceDateStale(dateStr: string | null): boolean {
+  if (!dateStr) return false;
+  
+  const sourceDate = parseSourceDate(dateStr);
+  if (!sourceDate) return false;
+  
+  // Get today's date in Madrid timezone
+  const madridNow = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const [year, month, day] = madridNow.split("-").map(Number);
+  const todayMadrid = new Date(year, month - 1, day);
+  
+  // Compare dates (source is stale if it's before today)
+  return sourceDate < todayMadrid;
+}
+
+/**
+ * Formats the source date (DD/MM/YYYY) for display.
+ */
+function formatSourceDate(dateStr: string, locale: string): string {
+  const sourceDate = parseSourceDate(dateStr);
+  if (!sourceDate) return dateStr;
+  
+  return sourceDate.toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 export function StatusCard({
@@ -130,18 +158,36 @@ export function StatusCard({
             </a>
           )}
 
-          {/* Last Updated */}
-          {data?.updated_at && (
-            <p
-              className="mt-4 text-sm opacity-60"
-              style={{ color: theme.textColor }}
-            >
-              {t.updated}:{" "}
-              {formatMadridTime(
-                data.updated_at,
-                t.headerTitle.startsWith("¿") ? "es" : "en"
+          {/* Stale warning and/or verify link */}
+          {data && (isSourceDateStale(data.source_updated_at) || data.code === 4) && (
+            <div className="mt-4 flex flex-col items-center gap-2">
+              {/* Stale data warning - only show when data is old */}
+              {isSourceDateStale(data.source_updated_at) && (
+                <p
+                  className="text-sm opacity-80"
+                  style={{ color: theme.textColor }}
+                >
+                  {t.lastSourceUpdate}:{" "}
+                  {data.source_updated_at && formatSourceDate(
+                    data.source_updated_at,
+                    t.headerTitle.startsWith("¿") ? "es" : "en"
+                  )}
+                </p>
               )}
-            </p>
+              
+              {/* Verify link for code 4 (restricted) */}
+              {data.code === 4 && (
+                <a
+                  href="https://x.com/MADRID"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm underline hover:opacity-80"
+                  style={{ color: theme.textColor }}
+                >
+                  {t.verifyOn} @MADRID →
+                </a>
+              )}
+            </div>
           )}
         </div>
       )}

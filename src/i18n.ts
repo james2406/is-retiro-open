@@ -4,7 +4,8 @@ export interface Translations {
   headerTitle: string;
   headerSubtitle: string;
   loading: string;
-  updated: string;
+  lastSourceUpdate: string;
+  verifyOn: string;
   dataProvidedBy: string;
   license: string;
   checkOfficialSite: string;
@@ -25,7 +26,8 @@ const translations: Record<Locale, Translations> = {
     headerTitle: "¿Está abierto el Retiro?",
     headerSubtitle: "",
     loading: "Cargando...",
-    updated: "Actualizado",
+    lastSourceUpdate: "Última actualización",
+    verifyOn: "Verifica en",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
     checkOfficialSite: "Ver web oficial",
@@ -51,7 +53,8 @@ const translations: Record<Locale, Translations> = {
     headerTitle: "Is Retiro Open?",
     headerSubtitle: "",
     loading: "Loading...",
-    updated: "Updated",
+    lastSourceUpdate: "Last update",
+    verifyOn: "Verify on",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",
