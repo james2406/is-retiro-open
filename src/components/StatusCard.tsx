@@ -1,4 +1,4 @@
-import { Info } from "lucide-react";
+import { Info, AlertTriangle } from "lucide-react";
 import type { RetiroStatus, StatusCode, StatusTheme } from "../types";
 import { STATUS_THEMES, ERROR_THEME } from "../types";
 import type { Translations } from "../i18n";
@@ -8,6 +8,7 @@ interface StatusCardProps {
   loading: boolean;
   error: string | null;
   isOffline: boolean;
+  hasActiveWarning: boolean;
   t: Translations;
 }
 
@@ -59,6 +60,7 @@ export function StatusCard({
   loading,
   error,
   isOffline,
+  hasActiveWarning,
   t,
 }: StatusCardProps) {
   let theme: StatusTheme;
@@ -81,6 +83,12 @@ export function StatusCard({
       const code = data.code as StatusCode;
       theme = STATUS_THEMES[code] || STATUS_THEMES[1];
       bigText = t.status[code].big;
+
+      // Add asterisk to "ABIERTO"/"OPEN" (code 1) when weather warning is active
+      // Codes 2-4 already have asterisks in translations
+      if (hasActiveWarning && code === 1) {
+        bigText = bigText + "*";
+      }
 
       // Build description, integrating incident hours if present
       if (data.incidents && data.code >= 5) {
@@ -158,36 +166,32 @@ export function StatusCard({
             </a>
           )}
 
-          {/* Stale warning and/or verify link */}
-          {data && (isSourceDateStale(data.source_updated_at) || data.code === 4) && (
-            <div className="mt-4 flex flex-col items-center gap-2">
-              {/* Stale data warning - only show when data is old */}
-              {isSourceDateStale(data.source_updated_at) && (
-                <p
-                  className="text-sm opacity-80"
-                  style={{ color: theme.textColor }}
-                >
-                  {t.lastSourceUpdate}:{" "}
-                  {data.source_updated_at && formatSourceDate(
-                    data.source_updated_at,
-                    t.headerTitle.startsWith("¿") ? "es" : "en"
-                  )}
-                </p>
+          {/* Weather alert verification prompt - show when warning active AND park not closed (codes 1-4) */}
+          {data && hasActiveWarning && data.code >= 1 && data.code <= 4 && (
+            <a
+              href="https://x.com/MADRID"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 flex items-center gap-3 bg-black/20 rounded-xl px-5 py-4 hover:bg-black/30 transition-colors"
+              style={{ color: theme.textColor }}
+            >
+              <AlertTriangle className="w-6 h-6 shrink-0" />
+              <span className="text-lg font-medium">{t.weatherAlert}</span>
+            </a>
+          )}
+
+          {/* Stale data warning - only show when data is old */}
+          {data && isSourceDateStale(data.source_updated_at) && (
+            <p
+              className="mt-4 text-sm opacity-80"
+              style={{ color: theme.textColor }}
+            >
+              {t.lastSourceUpdate}:{" "}
+              {data.source_updated_at && formatSourceDate(
+                data.source_updated_at,
+                t.headerTitle.startsWith("¿") ? "es" : "en"
               )}
-              
-              {/* Verify link for code 4 (restricted) */}
-              {data.code === 4 && (
-                <a
-                  href="https://x.com/MADRID"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm underline hover:opacity-80"
-                  style={{ color: theme.textColor }}
-                >
-                  {t.verifyOn} @MADRID →
-                </a>
-              )}
-            </div>
+            </p>
           )}
         </div>
       )}

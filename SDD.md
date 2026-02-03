@@ -122,10 +122,10 @@ interface RetiroStatus {
 }
 ```
 
-### 5.3 Stale Data Warning & Verification Link
+### 5.3 Stale Data Warning
 
 The Madrid API provides `FECHA_INCIDENCIA`, the date when they last updated the
-alert status. This enables two UX improvements:
+alert status.
 
 #### Stale Data Detection
 
@@ -138,38 +138,19 @@ timezone), the UI shows a warning:
 This alerts users when the source data may be outdated, even though our site is
 fetching fresh data.
 
-#### Verification Link for Restricted Status (Code 4)
-
-When the status is **code 4** (restricted - "eventos suspendidos, se recomienda
-no permanecer"), the UI shows a verification link to @MADRID on X/Twitter.
-
-**Rationale:** Code 4 is a transitional state where the park may actually be
-closed but the API hasn't caught up yet. Real-world observation showed
-multi-hour delays between actual closure and API update. Madrid typically posts
-closure announcements on social media faster than they update the API.
-
-**Note:** The link points to @MADRID on X because:
-
-1. Social media announcements are faster than API updates
-2. Madrid posts closures on social media but does NOT post re-openings
-3. Therefore, verification is most useful for restricted/closing states, not for
-   confirming "open" status
-
 ```
-| Status shown | Stale data? | UI behavior |
-|--------------|-------------|-------------|
-| Code 1-3     | No          | (nothing) |
-| Code 1-3     | Yes         | "Última actualización: {date}" |
-| Code 4       | No          | "Verifica en @MADRID →" |
-| Code 4       | Yes         | "Última actualización: {date}" + "Verifica en @MADRID →" |
-| Code 5-6     | No          | (nothing) |
-| Code 5-6     | Yes         | "Última actualización: {date}" |
+| Status shown | Stale data? | UI behavior                            |
+|--------------|-------------|----------------------------------------|
+| Code 1-6     | No          | (nothing)                              |
+| Code 1-6     | Yes         | "Última actualización: {date}"         |
 ```
 
 **Design rationale:** When data is fresh, no timestamp is shown - users don't
-need to know when we last checked if everything is current. Information is only
-displayed when actionable: stale data warns users the source may be outdated,
-and the verify link helps users confirm uncertain (code 4) states.
+need to know when we last checked if everything is current. The stale data
+warning only appears when actionable.
+
+**Note:** Verification links for uncertain states are handled by the AEMET
+weather warning integration (see Section 8).
 
 ## 6. Development & Testing
 
@@ -422,14 +403,15 @@ warned but the park API hasn't updated yet.
 - **Area ID:** `61` (Comunidad de Madrid)
 - **Format:** JSON response with URL to warning data
 - **CORS:** Not enabled (requires server-side proxy)
-- **API Key:** Free, register at https://opendata.aemet.es/centrodedescargas/altaUsuario
+- **API Key:** Free, register at
+  https://opendata.aemet.es/centrodedescargas/altaUsuario
 
 #### Why API over RSS
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **RSS** | No API key | Fetches all of Spain (~50KB), complex XML parsing, multiple requests for CAP details |
-| **API** | Single request for Madrid region, JSON format, includes all warning details | Requires free API key |
+| Approach | Pros                                                                        | Cons                                                                                 |
+| -------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **RSS**  | No API key                                                                  | Fetches all of Spain (~50KB), complex XML parsing, multiple requests for CAP details |
+| **API**  | Single request for Madrid region, JSON format, includes all warning details | Requires free API key                                                                |
 
 #### Madrid Identifiers
 
@@ -464,12 +446,14 @@ effectively covers heat scenarios.
 The AEMET OpenData API uses a two-step process:
 
 **Step 1:** Request warnings for area 61 (Madrid)
+
 ```
 GET /avisos_cap/ultimoelaborado/area/61
 Header: api_key: {your_key}
 ```
 
 Response:
+
 ```json
 {
   "descripcion": "exito",
@@ -479,9 +463,11 @@ Response:
 }
 ```
 
-**Step 2:** Fetch the `datos` URL to get actual warning data (CAP format or JSON)
+**Step 2:** Fetch the `datos` URL to get actual warning data (CAP format or
+JSON)
 
 The warning data includes:
+
 - `onset` / `expires`: Warning validity period (check if currently active)
 - `nivel`: amarillo / naranja / rojo
 - `fenomeno`: VI (wind), NV (snow), etc.
@@ -535,6 +521,7 @@ The proxy endpoint caches AEMET responses server-side:
 - **Rationale:** Warnings change slowly (hours); 15-min freshness is sufficient
 
 This means:
+
 - First request in 15 min → hits AEMET
 - Subsequent requests → served from edge cache
 - Typical user load patterns result in ~96 AEMET requests/day max
@@ -544,22 +531,25 @@ This means:
 Show verification prompt when:
 
 1. `hasActiveWeatherWarning` is true (wind or snow warning active for Madrid)
-2. AND park status shows open (codes 1-3)
+2. AND park status is not closed (codes 1-4)
 
-| Park Status    | Weather Warning Active | UI                                                 |
-| -------------- | ---------------------- | -------------------------------------------------- |
-| Open (1-3)     | No                     | (nothing)                                          |
-| Open (1-3)     | Yes                    | "Hay alerta meteorológica · Verifica en @MADRID →" |
-| Restricted (4) | Any                    | "Verifica en @MADRID →" (per Section 5.3)          |
-| Closed (5-6)   | Any                    | (nothing)                                          |
+| Park Status        | Weather Warning Active | UI                                                   |
+| ------------------ | ---------------------- | ---------------------------------------------------- |
+| Open (1-4)         | No                     | (nothing)                                            |
+| Open (1-4)         | Yes                    | "Alerta meteorológica · Verifica en @MADRID →" (box) |
+| Closed (5-6)       | Any                    | (nothing)                                            |
+
+When weather warning is active AND park shows open (code 1), the status text
+changes from "ABIERTO" to "ABIERTO*" to indicate uncertainty.
 
 #### Translations
 
-| Key            | Spanish                    | English                  |
-| -------------- | -------------------------- | ------------------------ |
-| `weatherAlert` | "Hay alerta meteorológica" | "Weather warning active" |
+| Key            | Spanish                                          | English                                    |
+| -------------- | ------------------------------------------------ | ------------------------------------------ |
+| `weatherAlert` | "Alerta meteorológica · Verifica en @MADRID →"   | "Weather warning · Verify on @MADRID →"    |
 
-The verify link points to `https://x.com/MADRID` (same as Section 5.3).
+The verify link points to `https://x.com/MADRID`. The prompt is styled as a
+prominent clickable box with an alert icon, not a subtle text link.
 
 #### No Severity Differentiation
 
@@ -571,18 +561,18 @@ above.
 
 #### Environment Variables
 
-| Variable | Description |
-|----------|-------------|
+| Variable        | Description                                                               |
+| --------------- | ------------------------------------------------------------------------- |
 | `AEMET_API_KEY` | Free API key from https://opendata.aemet.es/centrodedescargas/altaUsuario |
 
 #### Files to Create/Modify
 
-| File                              | Action | Change                                         |
-| --------------------------------- | ------ | ---------------------------------------------- |
-| `api/aemet-warnings.ts`           | Create | Proxy endpoint that calls AEMET API            |
-| `src/hooks/useWeatherWarnings.ts` | Create | Client hook to fetch from proxy endpoint       |
-| `src/components/StatusCard.tsx`   | Modify | Show weather alert verification prompt         |
-| `src/i18n.ts`                     | Modify | Add `weatherAlert` translation                 |
+| File                              | Action | Change                                   |
+| --------------------------------- | ------ | ---------------------------------------- |
+| `api/aemet-warnings.ts`           | Create | Proxy endpoint that calls AEMET API      |
+| `src/hooks/useWeatherWarnings.ts` | Create | Client hook to fetch from proxy endpoint |
+| `src/components/StatusCard.tsx`   | Modify | Show weather alert verification prompt   |
+| `src/i18n.ts`                     | Modify | Add `weatherAlert` translation           |
 
 #### Proxy Endpoint Behavior
 
@@ -595,7 +585,8 @@ The `/api/aemet-warnings` endpoint:
 5. Returns `{ hasActiveWarning: boolean }`
 6. On error, returns `{ hasActiveWarning: false }` (fail open)
 
-**Note:** Response format should be verified with a real API key before implementation.
+**Note:** Response format should be verified with a real API key before
+implementation.
 
 #### Client Hook Behavior
 

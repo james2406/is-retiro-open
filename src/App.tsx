@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Trees } from "lucide-react";
 import { useRetiroStatus } from "./hooks/useRetiroStatus";
+import { useWeatherWarnings } from "./hooks/useWeatherWarnings";
 import { StatusCard } from "./components/StatusCard";
 import { Footer } from "./components/Footer";
 import { STATUS_THEMES, ERROR_THEME } from "./types";
@@ -16,6 +17,7 @@ interface AppProps {
 function App({ initialData = null, initialLocale }: AppProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale || "es");
   const { data, loading, error, isOffline } = useRetiroStatus(initialData);
+  const { hasActiveWarning } = useWeatherWarnings();
 
   useEffect(() => {
     // Only attempt detection if no initial locale was provided (e.g. CSR fallback)
@@ -78,6 +80,7 @@ function App({ initialData = null, initialLocale }: AppProps) {
           loading={loading}
           error={error}
           isOffline={isOffline}
+          hasActiveWarning={hasActiveWarning}
           t={t}
         />
 

@@ -5,7 +5,7 @@ export interface Translations {
   headerSubtitle: string;
   loading: string;
   lastSourceUpdate: string;
-  verifyOn: string;
+  weatherAlert: string;
   dataProvidedBy: string;
   license: string;
   checkOfficialSite: string;
@@ -27,7 +27,7 @@ const translations: Record<Locale, Translations> = {
     headerSubtitle: "",
     loading: "Cargando...",
     lastSourceUpdate: "Última actualización",
-    verifyOn: "Verifica en",
+    weatherAlert: "Alerta meteorológica · Verifica en @MADRID →",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
     checkOfficialSite: "Ver web oficial",
@@ -54,7 +54,7 @@ const translations: Record<Locale, Translations> = {
     headerSubtitle: "",
     loading: "Loading...",
     lastSourceUpdate: "Last update",
-    verifyOn: "Verify on",
+    weatherAlert: "Weather warning · Verify on @MADRID →",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",
