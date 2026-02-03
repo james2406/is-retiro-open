@@ -64,14 +64,14 @@ graph LR
 **Timezone Rule:** All time displays must be strictly formatted in
 **Europe/Madrid** time, regardless of the user's local device time.
 
-| API Code | Meaning         | UI State (Big Text)      | Theme Color              | Text Color | UI Description (ES/EN)                                                                                                             |
-| -------- | --------------- | ------------------------ | ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **1**    | Abierto         | **ABIERTO / OPEN**       | **Green** (`#2ECC71`)    | White      | Abierto en horario habitual.<br>_Open regular hours._                                                                              |
-| **2**    | Incidencias     | **ABIERTO\* / OPEN\***   | **Blue** (`#3498DB`)     | White      | **Incidencias:** [Display `OBSERVACIONES` field].<br>_Incidents reported._                                                         |
-| **3**    | Alerta Amarilla | **ABIERTO\* / OPEN\***   | **Yellow** (`#F1C40F`)   | **Black**  | **Precaución:** Zonas infantiles y deportivas restringidas.<br>_Caution: Restricted access to specific zones._                     |
-| **4**    | Alerta Naranja  | **ABIERTO\* / OPEN\***   | **Orange** (`#E67E22`)   | White      | **Eventos suspendidos.** Se recomienda no permanecer en el parque.<br>_Events suspended. Recommendation: Do not stay in the park._ |
-| **5**    | Previsión Roja  | **CERRADO / CLOSED**     | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Standard Red Alert)._                                |
-| **6**    | Cerrado         | **CERRADO / CLOSED**     | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Emergency Closure)._                                 |
+| API Code | Meaning         | UI State (Big Text)    | Theme Color              | Text Color | UI Description (ES/EN)                                                                                                             |
+| -------- | --------------- | ---------------------- | ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **1**    | Abierto         | **ABIERTO / OPEN**     | **Green** (`#2ECC71`)    | White      | Abierto en horario habitual.<br>_Open regular hours._                                                                              |
+| **2**    | Incidencias     | **ABIERTO\* / OPEN\*** | **Blue** (`#3498DB`)     | White      | **Incidencias:** [Display `OBSERVACIONES` field].<br>_Incidents reported._                                                         |
+| **3**    | Alerta Amarilla | **ABIERTO\* / OPEN\*** | **Yellow** (`#F1C40F`)   | **Black**  | **Precaución:** Zonas infantiles y deportivas restringidas.<br>_Caution: Restricted access to specific zones._                     |
+| **4**    | Alerta Naranja  | **ABIERTO\* / OPEN\*** | **Orange** (`#E67E22`)   | White      | **Eventos suspendidos.** Se recomienda no permanecer en el parque.<br>_Events suspended. Recommendation: Do not stay in the park._ |
+| **5**    | Previsión Roja  | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Standard Red Alert)._                                |
+| **6**    | Cerrado         | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Emergency Closure)._                                 |
 
 > **Note on Code 5:** Historically treated as "Closing", empirical evidence
 > confirms that Code 5 represents a standard "Red Alert" where gates are locked
@@ -117,9 +117,59 @@ interface RetiroStatus {
   message: string;
   incidents: string | null;
   observations: string | null;
-  updated_at: string; // ISO String
+  updated_at: string; // ISO String - when we fetched the data
+  source_updated_at: string | null; // "DD/MM/YYYY" - when Madrid updated the alert (FECHA_INCIDENCIA)
 }
 ```
+
+### 5.3 Stale Data Warning & Verification Link
+
+The Madrid API provides `FECHA_INCIDENCIA`, the date when they last updated the
+alert status. This enables two UX improvements:
+
+#### Stale Data Detection
+
+If `source_updated_at` is **yesterday or older** (compared to today in Madrid
+timezone), the UI shows a warning:
+
+- Instead of "Actualizado: 14:32, 3 feb" (our fetch time)
+- Show "Última actualización: 2 feb" (Madrid's update date)
+
+This alerts users when the source data may be outdated, even though our site is
+fetching fresh data.
+
+#### Verification Link for Restricted Status (Code 4)
+
+When the status is **code 4** (restricted - "eventos suspendidos, se recomienda
+no permanecer"), the UI shows a verification link to @MADRID on X/Twitter.
+
+**Rationale:** Code 4 is a transitional state where the park may actually be
+closed but the API hasn't caught up yet. Real-world observation showed
+multi-hour delays between actual closure and API update. Madrid typically posts
+closure announcements on social media faster than they update the API.
+
+**Note:** The link points to @MADRID on X because:
+
+1. Social media announcements are faster than API updates
+2. Madrid posts closures on social media but does NOT post re-openings
+3. Therefore, verification is most useful for restricted/closing states, not for
+   confirming "open" status
+
+```
+| Status shown | Stale data? | UI behavior |
+|--------------|-------------|-------------|
+| Code 1-3     | No          | (nothing) |
+| Code 1-3     | Yes         | "Última actualización: {date}" |
+| Code 4       | No          | "Verifica en @MADRID →" |
+| Code 4       | Yes         | "Última actualización: {date}" + "Verifica en @MADRID →" |
+| Code 5-6     | No          | (nothing) |
+| Code 5-6     | Yes         | "Última actualización: {date}" |
+```
+
+**Design rationale:** When data is fresh, no timestamp is shown - users don't
+need to know when we last checked if everything is current. Information is only
+displayed when actionable: stale data warns users the source may be outdated,
+and the verify link helps users confirm uncertain (code 4) states.
 
 ## 6. Development & Testing
 
@@ -305,3 +355,283 @@ image generation without requiring external tools.
 Validate with [opengraph.xyz](https://opengraph.xyz) or
 [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/).
 Confirm `view-source:` shows resolved URLs (no `__PLACEHOLDER__` text).
+
+## 8. Weather Alert Integration (AEMET)
+
+### 8.1 Purpose
+
+The Madrid park status API can lag behind actual conditions by several hours. To
+help users make informed decisions, we cross-reference the park status with
+official weather warnings from AEMET (Agencia Estatal de Meteorología - Spain's
+national weather service).
+
+**Problem:** When weather conditions deteriorate, the park may close before the
+API updates. Users seeing "ABIERTO" might waste a trip.
+
+**Solution:** If AEMET has issued a weather warning for Madrid AND the park
+status shows open, prompt users to verify on @MADRID before visiting.
+
+### 8.2 Madrid Park Closure Protocol
+
+Madrid operates a formal protocol for park closures, approved June 2019 and
+revised July 2023. The protocol applies to nine parks including El Retiro.
+
+Source:
+[Ayuntamiento de Madrid - Protocolo de actuación](https://www.madrid.es/portales/munimadrid/es/Inicio/Medio-ambiente/Parques-y-jardines/Protocolo-de-actuacion-en-los-jardines-del-Buen-Retiro-ante-situaciones-meteorologicas-adversas/)
+
+#### Alert Levels and Thresholds
+
+| Level      | Wind (normal conditions) | Wind (heat >35°C or wet soil >75%) | Snow (24h) | Action                                               |
+| ---------- | ------------------------ | ---------------------------------- | ---------- | ---------------------------------------------------- |
+| **Green**  | <40 km/h                 | <30 km/h                           | <2 cm      | Normal operations                                    |
+| **Yellow** | 40-50 km/h               | 30-40 km/h                         | 2-5 cm     | Children's/sports areas closed; stay away from trees |
+| **Orange** | 50-65 km/h               | 40-55 km/h                         | 5-20 cm    | Events cancelled; recommendation to leave park       |
+| **Red**    | ≥65 km/h                 | ≥55 km/h                           | >20 cm     | Full closure                                         |
+
+#### Protocol Effectiveness
+
+According to the Ayuntamiento de Madrid, El Retiro is closed approximately **1%
+of the year**, but during that time **80.7% of branch and tree falls occur**.
+
+Source:
+[El País - El Ayuntamiento defiende los cierres](https://elpais.com/espana/madrid/2025-06-20/el-ayuntamiento-de-madrid-defiende-los-cierres-de-el-retiro-y-descarta-modificar-el-protocolo.html)
+
+#### Why AEMET Warnings Are Useful
+
+AEMET's wind warning thresholds are **higher** than Madrid's park thresholds:
+
+| AEMET Level | Wind Threshold | Madrid Park Equivalent        |
+| ----------- | -------------- | ----------------------------- |
+| Yellow      | ≥70 km/h       | Already exceeds Red (65 km/h) |
+| Orange      | ≥90 km/h       | Well above Red                |
+| Red         | ≥120 km/h      | Extreme                       |
+
+_AEMET threshold verified from actual warning data for zone 722802 (Madrid
+Metropolitana) on 2026-02-03, which showed a yellow warning at 70 km/h._
+
+**Implication:** If AEMET issues ANY wind warning for Madrid, the park protocol
+should already be at Red (closure). The feature catches cases where AEMET has
+warned but the park API hasn't updated yet.
+
+### 8.3 AEMET Data Source
+
+#### OpenData API (Free API Key Required)
+
+- **Base URL:** `https://opendata.aemet.es/opendata/api`
+- **Endpoint:** `/avisos_cap/ultimoelaborado/area/{areaId}`
+- **Area ID:** `61` (Comunidad de Madrid)
+- **Format:** JSON response with URL to warning data
+- **CORS:** Not enabled (requires server-side proxy)
+- **API Key:** Free, register at https://opendata.aemet.es/centrodedescargas/altaUsuario
+
+#### Why API over RSS
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **RSS** | No API key | Fetches all of Spain (~50KB), complex XML parsing, multiple requests for CAP details |
+| **API** | Single request for Madrid region, JSON format, includes all warning details | Requires free API key |
+
+#### Madrid Identifiers
+
+- **Area Code:** `61` (Comunidad de Madrid - used in API)
+- **Zone Code:** `722802` (Metropolitana y Henares - used in warning data)
+
+#### Relevant Warning Types
+
+Wind and snow warnings are the primary triggers per the park protocol:
+
+| Code   | Type           | Relevance                                  |
+| ------ | -------------- | ------------------------------------------ |
+| **VI** | Vientos (Wind) | Primary - directly triggers park protocol  |
+| **NV** | Nevadas (Snow) | Secondary - rare in Madrid but in protocol |
+
+Other warning types and why they're not checked:
+
+| Code   | Type                  | Handling                                                                                                                     |
+| ------ | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **TC** | Temperaturas extremas | Heat lowers wind threshold (65→55 km/h), but AEMET yellow (70 km/h) exceeds both, so wind warnings already cover the danger. |
+| **TO** | Tormentas (Storms)    | Storms with dangerous wind trigger separate wind warnings.                                                                   |
+| **LL** | Lluvias (Rain)        | Rain is not in the park closure protocol.                                                                                    |
+
+**Note on heat:** Heat alone does not close parks, but it significantly
+increases risk by lowering the wind threshold. All summer 2025 closures involved
+both heat (>35°C) AND wind. Since AEMET's yellow wind warning (70 km/h) exceeds
+even the heat-adjusted threshold (55 km/h), checking for wind warnings
+effectively covers heat scenarios.
+
+#### API Response Format
+
+The AEMET OpenData API uses a two-step process:
+
+**Step 1:** Request warnings for area 61 (Madrid)
+```
+GET /avisos_cap/ultimoelaborado/area/61
+Header: api_key: {your_key}
+```
+
+Response:
+```json
+{
+  "descripcion": "exito",
+  "estado": 200,
+  "datos": "https://opendata.aemet.es/opendata/sh/{hash}",
+  "metadatos": "https://opendata.aemet.es/opendata/sh/{hash}"
+}
+```
+
+**Step 2:** Fetch the `datos` URL to get actual warning data (CAP format or JSON)
+
+The warning data includes:
+- `onset` / `expires`: Warning validity period (check if currently active)
+- `nivel`: amarillo / naranja / rojo
+- `fenomeno`: VI (wind), NV (snow), etc.
+- `zona`: 722802 for Madrid Metropolitana
+
+**Note:** Actual response format should be verified with a real API key. The
+proxy implementation may need adjustment based on actual response structure.
+
+### 8.4 Architecture
+
+#### Client-Side Fetch via Proxy API
+
+Weather warnings are fetched **client-side** when the page loads, via a proxy
+API endpoint that fetches from AEMET.
+
+**Why a proxy:**
+
+- AEMET does not enable CORS; direct client-side fetch would fail
+- Proxy keeps API key server-side (not exposed to client)
+- Proxy endpoint allows server-side caching to reduce AEMET requests
+- Client gets fresh data on every page load (not stale from build time)
+
+```mermaid
+graph LR
+    User[User Browser] -- 1. Load Page --> Vercel[Vercel CDN]
+    React[React App] -- 2. Fetch Park Status --> Madrid[Madrid API]
+    React -- 3. Fetch Warnings --> Proxy[/api/aemet-warnings]
+    Proxy -- 4. Call AEMET API with key --> AEMET[AEMET OpenData API]
+    Proxy -- 5. Return warnings --> React
+    React -- 6. Cross-reference --> UI[Show verify if needed]
+```
+
+#### Data Flow
+
+1. Client loads page, React hydrates
+2. `useWeatherWarnings` hook fetches `/api/aemet-warnings`
+3. Proxy endpoint checks cache; if stale (>15 min), calls AEMET API
+4. Proxy calls `/avisos_cap/ultimoelaborado/area/61` with API key
+5. Proxy fetches the `datos` URL from response
+6. Proxy filters for zone `722802` and types `VI`/`NV`
+7. Proxy checks `onset` ≤ now ≤ `expires` for active warnings
+8. Returns `{ hasActiveWarning: boolean }` to client
+9. React shows verification prompt if warning active AND park open
+
+#### Caching Strategy
+
+The proxy endpoint caches AEMET responses server-side:
+
+- **Cache duration:** 15 minutes (`s-maxage=900`)
+- **Stale-while-revalidate:** 30 minutes (`stale-while-revalidate=1800`)
+- **Rationale:** Warnings change slowly (hours); 15-min freshness is sufficient
+
+This means:
+- First request in 15 min → hits AEMET
+- Subsequent requests → served from edge cache
+- Typical user load patterns result in ~96 AEMET requests/day max
+
+### 8.5 UI Logic
+
+Show verification prompt when:
+
+1. `hasActiveWeatherWarning` is true (wind or snow warning active for Madrid)
+2. AND park status shows open (codes 1-3)
+
+| Park Status    | Weather Warning Active | UI                                                 |
+| -------------- | ---------------------- | -------------------------------------------------- |
+| Open (1-3)     | No                     | (nothing)                                          |
+| Open (1-3)     | Yes                    | "Hay alerta meteorológica · Verifica en @MADRID →" |
+| Restricted (4) | Any                    | "Verifica en @MADRID →" (per Section 5.3)          |
+| Closed (5-6)   | Any                    | (nothing)                                          |
+
+#### Translations
+
+| Key            | Spanish                    | English                  |
+| -------------- | -------------------------- | ------------------------ |
+| `weatherAlert` | "Hay alerta meteorológica" | "Weather warning active" |
+
+The verify link points to `https://x.com/MADRID` (same as Section 5.3).
+
+#### No Severity Differentiation
+
+MVP shows the same message for yellow, orange, and red warnings. If AEMET has
+issued any warning, the park should already be closed per the threshold analysis
+above.
+
+### 8.6 Implementation
+
+#### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `AEMET_API_KEY` | Free API key from https://opendata.aemet.es/centrodedescargas/altaUsuario |
+
+#### Files to Create/Modify
+
+| File                              | Action | Change                                         |
+| --------------------------------- | ------ | ---------------------------------------------- |
+| `api/aemet-warnings.ts`           | Create | Proxy endpoint that calls AEMET API            |
+| `src/hooks/useWeatherWarnings.ts` | Create | Client hook to fetch from proxy endpoint       |
+| `src/components/StatusCard.tsx`   | Modify | Show weather alert verification prompt         |
+| `src/i18n.ts`                     | Modify | Add `weatherAlert` translation                 |
+
+#### Proxy Endpoint Behavior
+
+The `/api/aemet-warnings` endpoint:
+
+1. Calls AEMET API `/avisos_cap/ultimoelaborado/area/61` with API key
+2. Fetches the `datos` URL from response to get warning data
+3. Filters warnings for zone `722802` and types `VI` (wind) or `NV` (snow)
+4. Checks `onset` ≤ now ≤ `expires` for active warnings
+5. Returns `{ hasActiveWarning: boolean }`
+6. On error, returns `{ hasActiveWarning: false }` (fail open)
+
+**Note:** Response format should be verified with a real API key before implementation.
+
+#### Client Hook Behavior
+
+The `useWeatherWarnings` hook:
+
+1. Fetches `/api/aemet-warnings` on mount
+2. Caches result for 15 minutes (client-side)
+3. Does not refetch on window focus
+4. Returns `hasActiveWarning` boolean (defaults to `false`)
+
+### 8.7 Limitations and Future Improvements
+
+#### Current Limitations
+
+1. **15-minute cache staleness**: Warnings issued within the cache window won't
+   show immediately. Acceptable since warnings typically last hours.
+
+2. **No real-time updates**: If a warning is issued while user has page open,
+   they won't see it until page reload (same as park status).
+
+3. **Zone code hardcoded**: If AEMET reorganizes zones, code needs updating. Low
+   risk; zone codes are stable.
+
+#### Potential Future Improvements
+
+- **Push notifications**: For users who opt in, notify when warnings are issued.
+- **Polling**: Refetch warnings periodically while page is open (low priority
+  since warnings last hours).
+
+### 8.8 Fallback Behavior
+
+If AEMET RSS is unreachable when proxy is called:
+
+- Log error to console
+- Return `{ hasActiveWarning: false }`
+- Client continues without weather alert prompt
+- Core park status functionality unaffected
+
+Weather warnings are supplementary; the site must work without them.
