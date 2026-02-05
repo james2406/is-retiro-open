@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  buildWarningSignal,
   extractXmlDocuments,
   extractXmlDocumentsFromTarBuffer,
   isRelevantWarning,
@@ -166,4 +167,66 @@ test("extractXmlDocuments falls back to plain XML payloads", () => {
 
   assert.equal(docs.length, 1);
   assert.match(docs[0], /<alert>/);
+});
+
+test("buildWarningSignal flags active warnings for Retiro zone", () => {
+  const now = new Date("2026-02-05T12:00:00Z");
+  const signal = buildWarningSignal(
+    [
+      {
+        fenomeno: "VI;Vientos",
+        zona: "722802",
+        onset: "2026-02-05T10:00:00Z",
+        expires: "2026-02-05T18:00:00Z",
+        nivel: "severe",
+      },
+    ],
+    now
+  );
+
+  assert.equal(signal.hasActiveWarning, true);
+  assert.equal(signal.activeWarningSeverity, "severe");
+  assert.equal(signal.hasWarningWithin2Hours, false);
+  assert.equal(signal.hasWarningLaterToday, false);
+});
+
+test("buildWarningSignal classifies soon warnings within 2h", () => {
+  const now = new Date("2026-02-05T12:00:00Z");
+  const signal = buildWarningSignal(
+    [
+      {
+        fenomeno: "VI;Vientos",
+        zona: "722802",
+        onset: "2026-02-05T13:00:00Z",
+        expires: "2026-02-05T19:00:00Z",
+        nivel: "moderate",
+      },
+    ],
+    now
+  );
+
+  assert.equal(signal.hasActiveWarning, false);
+  assert.equal(signal.hasWarningWithin2Hours, true);
+  assert.equal(signal.hasWarningLaterToday, false);
+  assert.equal(signal.nextWarningSeverity, "moderate");
+});
+
+test("buildWarningSignal classifies later-today warnings outside 2h", () => {
+  const now = new Date("2026-02-05T12:00:00Z");
+  const signal = buildWarningSignal(
+    [
+      {
+        fenomeno: "VI;Vientos",
+        zona: "722802",
+        onset: "2026-02-05T18:00:00Z",
+        expires: "2026-02-05T21:00:00Z",
+        nivel: "moderate",
+      },
+    ],
+    now
+  );
+
+  assert.equal(signal.hasActiveWarning, false);
+  assert.equal(signal.hasWarningWithin2Hours, false);
+  assert.equal(signal.hasWarningLaterToday, true);
 });

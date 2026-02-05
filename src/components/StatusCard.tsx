@@ -1,14 +1,24 @@
 import { Info, AlertTriangle } from "lucide-react";
-import type { RetiroStatus, StatusCode, StatusTheme } from "../types";
-import { STATUS_THEMES, ERROR_THEME } from "../types";
+import type {
+  RetiroStatus,
+  StatusCode,
+  StatusTheme,
+  WeatherWarningSignal,
+} from "../types";
+import { STATUS_THEMES, ERROR_THEME, CLOSING_THEME } from "../types";
 import type { Translations } from "../i18n";
+import {
+  resolveClosureAdvisory,
+  type ClosureAdvisoryState,
+} from "../utils/closureAdvisory";
+import { resolvePrimaryStatus } from "../utils/primaryStatus";
 
 interface StatusCardProps {
   data: RetiroStatus | null;
   loading: boolean;
   error: string | null;
   isOffline: boolean;
-  hasActiveWarning: boolean;
+  weatherWarnings: WeatherWarningSignal;
   t: Translations;
 }
 
@@ -66,13 +76,15 @@ export function StatusCard({
   loading,
   error,
   isOffline,
-  hasActiveWarning,
+  weatherWarnings,
   t,
 }: StatusCardProps) {
   let theme: StatusTheme;
   let bigText: string;
   let description: string;
   let showObservations = false;
+  let advisoryState: ClosureAdvisoryState = "none";
+  const isSpanish = t.headerTitle.startsWith("¿");
 
   if (isOffline && !data) { // Only show offline error if we have NO data
     theme = ERROR_THEME;
@@ -87,18 +99,30 @@ export function StatusCard({
     // Fallback if data is null (shouldn't happen here due to logic, but for TS)
     if (data) {
       const code = data.code as StatusCode;
-      theme = STATUS_THEMES[code] || STATUS_THEMES[1];
-      bigText = t.status[code].big;
+      const advisory = resolveClosureAdvisory(code, weatherWarnings);
+      advisoryState = advisory.state;
+      const primaryStatus = resolvePrimaryStatus(code, advisoryState);
+      theme =
+        primaryStatus.mode === "closing"
+          ? CLOSING_THEME
+          : STATUS_THEMES[primaryStatus.themeCode] || STATUS_THEMES[1];
 
-      // Add asterisk to "ABIERTO"/"OPEN" (code 1) when weather warning is active
-      // Codes 2-4 already have asterisks in translations
-      if (hasActiveWarning && code === 1) {
-        bigText = bigText + "*";
-      }
+      if (primaryStatus.mode === "predicted_closed") {
+        bigText = t.predictedClosedBig;
+        description = t.predictedClosedDescription;
+      } else if (primaryStatus.mode === "closing") {
+        bigText = t.closingBig;
+        description = t.closingDescription;
+      } else {
+        bigText = t.status[code].big;
+        // Add an asterisk when code 1 has a later-today warning.
+        // Codes 2-4 already include asterisks in translations.
+        if (advisoryState === "closing_later_today" && code === 1) {
+          bigText = bigText + "*";
+        }
 
-      // Build description, integrating incident hours if present
-      if (data.incidents && data.code >= 5) {
-        const isSpanish = t.headerTitle.startsWith("¿");
+        // Build description, integrating incident hours if present
+        if (data.incidents && data.code >= 5) {
         // Treat both closing (5) and closed (6) as closed
         description = isSpanish
           ? `Cerrado por alerta meteorológica (${data.incidents}).`
@@ -106,8 +130,12 @@ export function StatusCard({
               " a ",
               "–"
             )}).`;
-      } else {
-        description = t.status[code].description;
+        } else {
+          description =
+            advisoryState === "closing_later_today"
+              ? t.closingLaterTodayDescription
+              : t.status[code].description;
+        }
       }
 
       showObservations = !!data.observations && data.code === 2;
@@ -117,6 +145,16 @@ export function StatusCard({
       bigText = "";
       description = "";
     }
+  }
+
+  let advisoryText: string | null = null;
+
+  if (advisoryState === "likely_closed_now") {
+    advisoryText = t.likelyClosedNowAlert;
+  } else if (advisoryState === "closing_soon") {
+    advisoryText = t.closingSoonAlert;
+  } else if (advisoryState === "closing_later_today") {
+    advisoryText = t.closingLaterTodayAlert;
   }
 
   return (
@@ -172,8 +210,8 @@ export function StatusCard({
             </a>
           )}
 
-          {/* Weather alert verification prompt - show when warning active AND park not closed (codes 1-4) */}
-          {data && hasActiveWarning && data.code >= 1 && data.code <= 4 && (
+          {/* Predictive closure advisory - only when park is still shown as open/restricted (codes 1-4) */}
+          {data && advisoryText && data.code >= 1 && data.code <= 4 && (
             <a
               href="https://x.com/MADRID"
               target="_blank"
@@ -182,8 +220,17 @@ export function StatusCard({
               style={{ color: theme.textColor }}
             >
               <AlertTriangle className="w-6 h-6 shrink-0" />
-              <span className="text-lg font-medium">{t.weatherAlert}</span>
+              <span className="text-lg font-medium">{advisoryText}</span>
             </a>
+          )}
+
+          {/* Context note when main status is upgraded from open/restricted to predicted closed */}
+          {data && advisoryState === "likely_closed_now" && data.code <= 4 && (
+            <p className="mt-3 text-sm opacity-80" style={{ color: theme.textColor }}>
+              {isSpanish
+                ? "Estado principal ajustado por aviso activo de AEMET; el parte oficial del parque puede retrasarse."
+                : "Main status adjusted from active AEMET warning; official park feed may lag."}
+            </p>
           )}
 
           {/* Stale data warning - only show when data is old */}

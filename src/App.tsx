@@ -4,10 +4,12 @@ import { useRetiroStatus } from "./hooks/useRetiroStatus";
 import { useWeatherWarnings } from "./hooks/useWeatherWarnings";
 import { StatusCard } from "./components/StatusCard";
 import { Footer } from "./components/Footer";
-import { STATUS_THEMES, ERROR_THEME } from "./types";
+import { STATUS_THEMES, ERROR_THEME, CLOSING_THEME } from "./types";
 import { detectLocale, getTranslations } from "./i18n";
 import type { StatusCode, RetiroStatus } from "./types";
 import type { Locale } from "./i18n";
+import { resolveClosureAdvisory } from "./utils/closureAdvisory";
+import { resolvePrimaryStatus } from "./utils/primaryStatus";
 
 interface AppProps {
   initialData?: RetiroStatus | null;
@@ -17,7 +19,7 @@ interface AppProps {
 function App({ initialData = null, initialLocale }: AppProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale || "es");
   const { data, loading, error, isOffline } = useRetiroStatus(initialData);
-  const { hasActiveWarning } = useWeatherWarnings();
+  const weatherWarnings = useWeatherWarnings();
 
   useEffect(() => {
     // Only attempt detection if no initial locale was provided (e.g. CSR fallback)
@@ -30,6 +32,8 @@ function App({ initialData = null, initialLocale }: AppProps) {
   }, [initialLocale]);
 
   const t = getTranslations(locale);
+  const advisory = resolveClosureAdvisory(data?.code, weatherWarnings);
+  const primaryStatus = resolvePrimaryStatus(data?.code, advisory.state);
 
   // Determine current theme for consistent styling
   let theme;
@@ -40,8 +44,11 @@ function App({ initialData = null, initialLocale }: AppProps) {
     // No data available (offline or error state)
     theme = ERROR_THEME;
   } else {
-    // We have data (either initial or fetched), so use it even if offline
-    theme = STATUS_THEMES[data.code as StatusCode] || STATUS_THEMES[1];
+    // We have data (either initial or fetched), so use primary status resolution.
+    theme =
+      primaryStatus.mode === "closing"
+        ? CLOSING_THEME
+        : STATUS_THEMES[primaryStatus.themeCode as StatusCode] || STATUS_THEMES[1];
   }
 
   // Update theme-color meta tag for mobile browsers
@@ -80,7 +87,7 @@ function App({ initialData = null, initialLocale }: AppProps) {
           loading={loading}
           error={error}
           isOffline={isOffline}
-          hasActiveWarning={hasActiveWarning}
+          weatherWarnings={weatherWarnings}
           t={t}
         />
 

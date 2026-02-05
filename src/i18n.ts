@@ -6,6 +6,14 @@ export interface Translations {
   loading: string;
   lastSourceUpdate: string;
   weatherAlert: string;
+  likelyClosedNowAlert: string;
+  closingSoonAlert: string;
+  closingLaterTodayAlert: string;
+  closingLaterTodayDescription: string;
+  predictedClosedBig: string;
+  predictedClosedDescription: string;
+  closingBig: string;
+  closingDescription: string;
   dataProvidedBy: string;
   license: string;
   checkOfficialSite: string;
@@ -28,6 +36,14 @@ const translations: Record<Locale, Translations> = {
     loading: "Cargando...",
     lastSourceUpdate: "Última actualización",
     weatherAlert: "Alerta meteorológica · Verifica en @MADRID →",
+    likelyClosedNowAlert: "Aviso activo · Verifica en @MADRID →",
+    closingSoonAlert: "Aviso meteorológico · Verifica en @MADRID →",
+    closingLaterTodayAlert: "Aviso meteorológico · Verifica en @MADRID →",
+    closingLaterTodayDescription: "Posible cierre más tarde hoy.",
+    predictedClosedBig: "CERRADO",
+    predictedClosedDescription: "Cierre probable por aviso meteorológico activo.",
+    closingBig: "CIERRE INMINENTE",
+    closingDescription: "Posible cierre inminente por aviso meteorológico.",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
     checkOfficialSite: "Ver web oficial",
@@ -55,6 +71,14 @@ const translations: Record<Locale, Translations> = {
     loading: "Loading...",
     lastSourceUpdate: "Last update",
     weatherAlert: "Weather warning · Verify on @MADRID →",
+    likelyClosedNowAlert: "Active warning · Verify on @MADRID →",
+    closingSoonAlert: "Weather warning · Verify on @MADRID →",
+    closingLaterTodayAlert: "Weather warning · Verify on @MADRID →",
+    closingLaterTodayDescription: "May close later today.",
+    predictedClosedBig: "CLOSED",
+    predictedClosedDescription: "Likely closure due to an active weather warning.",
+    closingBig: "CLOSING",
+    closingDescription: "Likely to close soon due to weather warnings.",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",

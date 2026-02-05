@@ -11,6 +11,18 @@ export interface AemetWarning {
   zona?: string; // Zone code (e.g., 722802)
 }
 
+type WarningSeverity = "minor" | "moderate" | "severe" | "extreme" | null;
+
+export interface AemetWarningSignal {
+  hasActiveWarning: boolean;
+  hasWarningWithin2Hours: boolean;
+  hasWarningLaterToday: boolean;
+  activeWarningSeverity: WarningSeverity;
+  nextWarningOnset: string | null;
+  nextWarningSeverity: WarningSeverity;
+  fetchedAt: string | null;
+}
+
 interface AemetInitialResponse {
   descripcion?: string;
   estado?: number;
@@ -29,6 +41,153 @@ const RELEVANT_WARNING_PREFIXES = ["VI", "NE"];
 const MADRID_RETIRO_ZONE = "722802";
 const REQUEST_TIMEOUT_MS = 8000;
 const TAR_BLOCK_SIZE = 512;
+const CLOSING_SOON_WINDOW_MS = 2 * 60 * 60 * 1000;
+const MADRID_TIMEZONE = "Europe/Madrid";
+const WARNING_SEVERITY_RANK: Record<Exclude<WarningSeverity, null>, number> = {
+  minor: 1,
+  moderate: 2,
+  severe: 3,
+  extreme: 4,
+};
+
+function firstQueryValue(value: string | string[] | undefined): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
+
+function getMadridDateKey(date: Date): string {
+  return date.toLocaleDateString("en-CA", { timeZone: MADRID_TIMEZONE });
+}
+
+function normalizeSeverity(value: string | undefined): WarningSeverity {
+  if (!value) return null;
+  const normalized = value.toLowerCase();
+  if (
+    normalized === "minor" ||
+    normalized === "moderate" ||
+    normalized === "severe" ||
+    normalized === "extreme"
+  ) {
+    return normalized;
+  }
+  return null;
+}
+
+function pickHighestSeverity(warnings: AemetWarning[]): WarningSeverity {
+  let highest: WarningSeverity = null;
+
+  for (const warning of warnings) {
+    const current = normalizeSeverity(warning.nivel);
+    if (!current) continue;
+
+    if (!highest || WARNING_SEVERITY_RANK[current] > WARNING_SEVERITY_RANK[highest]) {
+      highest = current;
+    }
+  }
+
+  return highest;
+}
+
+function emptyWarningSignal(fetchedAt: string | null): AemetWarningSignal {
+  return {
+    hasActiveWarning: false,
+    hasWarningWithin2Hours: false,
+    hasWarningLaterToday: false,
+    activeWarningSeverity: null,
+    nextWarningOnset: null,
+    nextWarningSeverity: null,
+    fetchedAt,
+  };
+}
+
+/**
+ * Converts relevant warnings into a conservative closure signal model.
+ * Active warning > soon warning (>0 and <=2h) > later today warning.
+ */
+export function buildWarningSignal(
+  warnings: AemetWarning[],
+  now: Date = new Date()
+): Omit<AemetWarningSignal, "fetchedAt"> {
+  const relevantWarnings = warnings.filter((warning) => isRelevantWarning(warning));
+  const activeWarnings = relevantWarnings.filter((warning) =>
+    isWarningActive(warning, now)
+  );
+
+  const upcomingWarnings = relevantWarnings
+    .map((warning) => {
+      if (!warning.onset) return null;
+      const onset = parseDate(warning.onset);
+      if (!onset || onset <= now) return null;
+      return { warning, onset };
+    })
+    .filter((entry): entry is { warning: AemetWarning; onset: Date } => entry !== null)
+    .sort((a, b) => a.onset.getTime() - b.onset.getTime());
+
+  const nextUpcoming = upcomingWarnings[0];
+  const nextWarningOnset = nextUpcoming ? nextUpcoming.onset.toISOString() : null;
+  const nextWarningSeverity = nextUpcoming
+    ? normalizeSeverity(nextUpcoming.warning.nivel)
+    : null;
+
+  const hasWarningWithin2Hours = nextUpcoming
+    ? nextUpcoming.onset.getTime() - now.getTime() <= CLOSING_SOON_WINDOW_MS
+    : false;
+
+  const hasWarningLaterToday = nextUpcoming
+    ? !hasWarningWithin2Hours &&
+      getMadridDateKey(nextUpcoming.onset) === getMadridDateKey(now)
+    : false;
+
+  return {
+    hasActiveWarning: activeWarnings.length > 0,
+    hasWarningWithin2Hours,
+    hasWarningLaterToday,
+    activeWarningSeverity: pickHighestSeverity(activeWarnings),
+    nextWarningOnset,
+    nextWarningSeverity,
+  };
+}
+
+function buildMockWarningSignal(
+  scenario: "none" | "active" | "soon" | "later",
+  now: Date
+): AemetWarningSignal {
+  switch (scenario) {
+    case "active":
+      return {
+        hasActiveWarning: true,
+        hasWarningWithin2Hours: false,
+        hasWarningLaterToday: false,
+        activeWarningSeverity: "moderate",
+        nextWarningOnset: null,
+        nextWarningSeverity: null,
+        fetchedAt: now.toISOString(),
+      };
+    case "soon":
+      return {
+        hasActiveWarning: false,
+        hasWarningWithin2Hours: true,
+        hasWarningLaterToday: false,
+        activeWarningSeverity: null,
+        nextWarningOnset: new Date(now.getTime() + 60 * 60 * 1000).toISOString(),
+        nextWarningSeverity: "moderate",
+        fetchedAt: now.toISOString(),
+      };
+    case "later":
+      return {
+        hasActiveWarning: false,
+        hasWarningWithin2Hours: false,
+        hasWarningLaterToday: true,
+        activeWarningSeverity: null,
+        nextWarningOnset: null,
+        nextWarningSeverity: "moderate",
+        fetchedAt: now.toISOString(),
+      };
+    case "none":
+    default:
+      return emptyWarningSignal(now.toISOString());
+  }
+}
 
 /**
  * Simple XML text extraction helper
@@ -279,7 +438,7 @@ async function fetchWithTimeout(
 
 /**
  * Serverless function handler for AEMET weather warnings proxy.
- * Fetches weather warnings for Madrid and returns whether there's an active warning.
+ * Fetches weather warnings for Madrid and returns a predictive signal object.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -292,10 +451,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // Handle mock mode for testing
-  const { mock, warning } = req.query;
+  const mock = firstQueryValue(req.query.mock);
+  const warning = firstQueryValue(req.query.warning);
+  const warningScenario = firstQueryValue(req.query.warningScenario);
   if (mock === "true") {
-    const hasWarning = warning === "true";
-    return res.status(200).json({ hasActiveWarning: hasWarning });
+    const now = new Date();
+    let scenario: "none" | "active" | "soon" | "later" = "none";
+
+    if (
+      warningScenario === "none" ||
+      warningScenario === "active" ||
+      warningScenario === "soon" ||
+      warningScenario === "later"
+    ) {
+      scenario = warningScenario;
+    } else if (warning === "true") {
+      // Backward compatibility with old mock parameter.
+      scenario = "active";
+    }
+
+    return res.status(200).json(buildMockWarningSignal(scenario, now));
   }
 
   const apiKey = process.env.AEMET_API_KEY;
@@ -340,22 +515,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       warnings.push(...parsed);
     }
 
-    // Filter for relevant (wind/snow in Retiro zone) and currently active warnings
-    const activeWarnings = warnings.filter((w) => {
-      return isRelevantWarning(w) && isWarningActive(w);
-    });
+    const now = new Date();
+    const signal = buildWarningSignal(warnings, now);
 
-    const hasActiveWarning = activeWarnings.length > 0;
+    // Cache for 5 minutes, serve stale for 10 more while revalidating
+    res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
 
-    // Cache for 15 minutes, serve stale for 30 more while revalidating
-    res.setHeader("Cache-Control", "s-maxage=900, stale-while-revalidate=1800");
-
-    return res.status(200).json({ hasActiveWarning });
+    return res
+      .status(200)
+      .json({ ...signal, fetchedAt: now.toISOString() } satisfies AemetWarningSignal);
   } catch (error) {
     console.error("[AEMET] Error fetching warnings:", error);
 
     // Fail-open: weather warning is a secondary signal and should not break UX.
     res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120");
-    return res.status(200).json({ hasActiveWarning: false });
+    return res.status(200).json(emptyWarningSignal(new Date().toISOString()));
   }
 }
