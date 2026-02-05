@@ -2,6 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { Providers } from "./components/Providers";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 import "./index.css";
 
 const container = document.getElementById("root");
@@ -14,6 +16,8 @@ if (container) {
     <React.StrictMode>
       <Providers>
         <App initialData={initialData} initialLocale={initialLocale} />
+        <Analytics />
+        <SpeedInsights />
       </Providers>
     </React.StrictMode>
   );
