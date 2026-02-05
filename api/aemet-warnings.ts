@@ -3,7 +3,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 /**
  * AEMET Warning response structure parsed from CAP XML
  */
-interface AemetWarning {
+export interface AemetWarning {
   onset?: string;
   expires?: string;
   nivel?: string; // severity level
@@ -27,41 +27,85 @@ const RELEVANT_WARNING_PREFIXES = ["VI", "NE"];
 // Madrid zones: 722801=Sierra, 722802=Metropolitana y Henares, 722803=Sur/Vegas/Oeste
 // Retiro Park is in the "Metropolitana y Henares" zone
 const MADRID_RETIRO_ZONE = "722802";
+const REQUEST_TIMEOUT_MS = 8000;
+const TAR_BLOCK_SIZE = 512;
 
 /**
  * Simple XML text extraction helper
  */
 function extractXmlTag(xml: string, tag: string): string | undefined {
-  const regex = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, 'i');
+  const regex = new RegExp(`<${tag}[^>]*>([^<]*)</${tag}>`, "i");
   const match = xml.match(regex);
   return match ? match[1].trim() : undefined;
 }
 
 /**
- * Parse CAP XML format into our warning structure
- * CAP = Common Alerting Protocol used by AEMET
+ * Extracts <valueName>/<value> pairs from nested CAP blocks such as
+ * <eventCode> and <geocode>.
  */
-function parseCapXml(xml: string): AemetWarning[] {
+function extractNamedValues(
+  xml: string,
+  tag: "eventCode" | "geocode"
+): Array<{ valueName?: string; value: string }> {
+  const pairs: Array<{ valueName?: string; value: string }> = [];
+  const regex = new RegExp(`<${tag}\\b[^>]*>([\\s\\S]*?)</${tag}>`, "gi");
+  let match: RegExpExecArray | null;
+
+  match = regex.exec(xml);
+  while (match) {
+    const block = match[1];
+    const value = extractXmlTag(block, "value");
+    if (value) {
+      pairs.push({
+        valueName: extractXmlTag(block, "valueName")?.toLowerCase(),
+        value,
+      });
+    }
+    match = regex.exec(xml);
+  }
+
+  return pairs;
+}
+
+function extractFenomeno(infoBlock: string): string | undefined {
+  const eventCodes = extractNamedValues(infoBlock, "eventCode");
+  if (eventCodes.length === 0) return undefined;
+
+  const phenomenonCode = eventCodes.find((entry) =>
+    entry.valueName?.includes("fen")
+  );
+
+  return phenomenonCode?.value ?? eventCodes[0].value;
+}
+
+function extractZona(infoBlock: string): string | undefined {
+  const geocodes = extractNamedValues(infoBlock, "geocode");
+  if (geocodes.length === 0) return undefined;
+
+  const ugcCode = geocodes.find(
+    (entry) => entry.valueName?.includes("ugc") || entry.valueName?.includes("zona")
+  );
+
+  return ugcCode?.value ?? geocodes[0].value;
+}
+
+/**
+ * Parse CAP XML format into our warning structure.
+ * CAP = Common Alerting Protocol used by AEMET.
+ */
+export function parseCapXml(xml: string): AemetWarning[] {
   const warnings: AemetWarning[] = [];
+  const infoRegex = /<info\b[^>]*>([\s\S]*?)<\/info>/gi;
+  let match: RegExpExecArray | null;
 
-  // Split by <info> blocks - each contains one warning
-  const infoBlocks = xml.split(/<info>/i).slice(1);
-
-  for (const block of infoBlocks) {
-    // Extract event type code from eventCode
-    const eventCodeMatch = block.match(/<eventCode>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/eventCode>/i);
-    const fenomeno = eventCodeMatch ? eventCodeMatch[1].trim() : undefined;
-
-    // Extract zone/geocode
-    const geocodeMatch = block.match(/<geocode>[\s\S]*?<value>([^<]+)<\/value>[\s\S]*?<\/geocode>/i);
-    const zona = geocodeMatch ? geocodeMatch[1].trim() : undefined;
-
-    // Extract timing
-    const onset = extractXmlTag(block, 'onset');
-    const expires = extractXmlTag(block, 'expires');
-
-    // Extract severity/level
-    const severity = extractXmlTag(block, 'severity');
+  match = infoRegex.exec(xml);
+  while (match) {
+    const infoBlock = match[1];
+    const onset = extractXmlTag(infoBlock, "onset");
+    const expires = extractXmlTag(infoBlock, "expires");
+    const severity = extractXmlTag(infoBlock, "severity");
+    const fenomeno = extractFenomeno(infoBlock);
+    const zona = extractZona(infoBlock);
 
     warnings.push({
       fenomeno,
@@ -70,25 +114,30 @@ function parseCapXml(xml: string): AemetWarning[] {
       expires,
       nivel: severity?.toLowerCase(),
     });
+
+    match = infoRegex.exec(xml);
   }
 
   return warnings;
 }
 
+function parseDate(value: string): Date | null {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 /**
  * Checks if a warning is currently active based on onset/expires times
  */
-function isWarningActive(warning: AemetWarning): boolean {
-  const now = new Date();
-
+export function isWarningActive(warning: AemetWarning, now: Date = new Date()): boolean {
   if (warning.onset) {
-    const onset = new Date(warning.onset);
-    if (onset > now) return false; // Not yet started
+    const onset = parseDate(warning.onset);
+    if (!onset || onset > now) return false;
   }
 
   if (warning.expires) {
-    const expires = new Date(warning.expires);
-    if (expires < now) return false; // Already expired
+    const expires = parseDate(warning.expires);
+    if (!expires || expires <= now) return false;
   }
 
   return true;
@@ -104,22 +153,128 @@ function isWarningActive(warning: AemetWarning): boolean {
  * 
  * The fenomeno field format is "CODE;Description" e.g. "VI;Vientos", "NE;Nevadas"
  */
-function isRelevantWarning(warning: AemetWarning): boolean {
+export function isRelevantWarning(warning: AemetWarning): boolean {
   if (!warning.fenomeno) return false;
 
   // Check zone - must be Metropolitana y Henares (where Retiro Park is)
   // 722801 = Sierra de Madrid (mountains - not relevant)
   // 722802 = Metropolitana y Henares (RETIRO IS HERE)
   // 722803 = Sur, Vegas y Oeste (southern suburbs - not relevant)
-  if (warning.zona !== MADRID_RETIRO_ZONE) {
+  if (!warning.zona || !warning.zona.includes(MADRID_RETIRO_ZONE)) {
     return false;
   }
 
   // Extract the warning type code (before the semicolon)
-  const warningCode = warning.fenomeno.split(";")[0];
+  const warningCode = warning.fenomeno.split(";")[0]?.trim().toUpperCase();
+  if (!warningCode) return false;
 
   // Check if it's wind (VI) or snow (NE)
   return RELEVANT_WARNING_PREFIXES.includes(warningCode);
+}
+
+export function extractXmlDocumentsFromText(rawText: string): string[] {
+  const xmlMatches = rawText.match(/<alert\b[\s\S]*?<\/alert>/gi) || [];
+  return xmlMatches.map((xml) => xml.trim()).filter(Boolean);
+}
+
+function readTarAscii(field: Uint8Array): string {
+  let result = "";
+
+  for (const byte of field) {
+    if (byte === 0) break;
+    result += String.fromCharCode(byte);
+  }
+
+  return result;
+}
+
+function parseTarFileSize(header: Uint8Array): number | null {
+  const sizeField = header.subarray(124, 136);
+  const octalSize = readTarAscii(sizeField).trim().replace(/\0/g, "");
+  if (!octalSize) return 0;
+
+  const parsed = Number.parseInt(octalSize, 8);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return null;
+  }
+
+  return parsed;
+}
+
+/**
+ * Extract CAP XML documents from a TAR archive payload.
+ */
+export function extractXmlDocumentsFromTarBuffer(buffer: ArrayBuffer): string[] {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < TAR_BLOCK_SIZE) return [];
+
+  const xmlDocs: string[] = [];
+  const decoder = new TextDecoder("utf-8");
+  let offset = 0;
+
+  while (offset + TAR_BLOCK_SIZE <= bytes.length) {
+    const header = bytes.subarray(offset, offset + TAR_BLOCK_SIZE);
+    const isEndBlock = header.every((byte) => byte === 0);
+    if (isEndBlock) break;
+
+    const fileSize = parseTarFileSize(header);
+    if (fileSize === null) return [];
+
+    const dataStart = offset + TAR_BLOCK_SIZE;
+    const paddedSize = Math.ceil(fileSize / TAR_BLOCK_SIZE) * TAR_BLOCK_SIZE;
+    const nextOffset = dataStart + paddedSize;
+
+    if (nextOffset > bytes.length) return [];
+
+    if (fileSize > 0) {
+      const fileBytes = bytes.subarray(dataStart, dataStart + fileSize);
+      const fileText = decoder.decode(fileBytes);
+      const matches = extractXmlDocumentsFromText(fileText);
+      if (matches.length > 0) {
+        xmlDocs.push(...matches);
+      }
+    }
+
+    offset = nextOffset;
+  }
+
+  return xmlDocs;
+}
+
+export function extractXmlDocuments(rawBuffer: ArrayBuffer, contentType: string): string[] {
+  const tarXmlDocs = extractXmlDocumentsFromTarBuffer(rawBuffer);
+  if (tarXmlDocs.length > 0) {
+    return tarXmlDocs;
+  }
+
+  const rawText = new TextDecoder("utf-8").decode(new Uint8Array(rawBuffer));
+  const xmlMatches = extractXmlDocumentsFromText(rawText);
+  if (xmlMatches.length > 0) {
+    return xmlMatches;
+  }
+
+  if (rawText.trim().length === 0) {
+    return [];
+  }
+
+  throw new Error(
+    `No CAP XML alerts found in AEMET datos response (content-type: ${contentType}, length: ${rawText.length})`
+  );
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs: number = REQUEST_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /**
@@ -153,14 +308,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Step 1: Get the datos URL from AEMET API
     const url = `${AEMET_API_BASE}/avisos_cap/ultimoelaborado/area/${MADRID_AREA_CODE}`;
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    const initialResponse = await fetch(url, {
+    const initialResponse = await fetchWithTimeout(url, {
       headers: { api_key: apiKey },
-      signal: controller.signal,
     });
-    clearTimeout(timeout);
 
     if (!initialResponse.ok) {
       throw new Error(`AEMET API responded with status ${initialResponse.status}`);
@@ -173,35 +323,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Step 2: Fetch the datos URL to get actual warning data (TAR of CAP XML files)
-    const datosController = new AbortController();
-    const datosTimeout = setTimeout(() => datosController.abort(), 8000);
-
-    const datosResponse = await fetch(initialData.datos, {
-      signal: datosController.signal,
-    });
-    clearTimeout(datosTimeout);
+    const datosResponse = await fetchWithTimeout(initialData.datos);
 
     if (!datosResponse.ok) {
       throw new Error(`AEMET datos URL responded with status ${datosResponse.status}`);
     }
 
-    // The response is a TAR archive containing CAP XML files
-    // Validate content-type to catch unexpected binary formats
+    // Extract CAP XML from TAR payload or plain XML response.
     const contentType = datosResponse.headers.get("content-type") ?? "";
-    const rawText = await datosResponse.text();
-
-    // Extract XML documents from the tar stream
-    const xmlMatches = rawText.match(/<\?xml[\s\S]*?<\/alert>/gi) || [];
-
-    // Guard against binary corruption or parsing failure
-    if (xmlMatches.length === 0 && rawText.length > 0) {
-      throw new Error(
-        `No CAP XML alerts found in AEMET datos response (content-type: ${contentType}, length: ${rawText.length})`
-      );
-    }
+    const rawBuffer = await datosResponse.arrayBuffer();
+    const xmlDocuments = extractXmlDocuments(rawBuffer, contentType);
 
     let warnings: AemetWarning[] = [];
-    for (const xmlDoc of xmlMatches) {
+    for (const xmlDoc of xmlDocuments) {
       const parsed = parseCapXml(xmlDoc);
       warnings.push(...parsed);
     }
@@ -220,7 +354,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (error) {
     console.error("[AEMET] Error fetching warnings:", error);
 
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return res.status(502).json({ error: `AEMET API error: ${message}` });
+    // Fail-open: weather warning is a secondary signal and should not break UX.
+    res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=120");
+    return res.status(200).json({ hasActiveWarning: false });
   }
 }

@@ -16,7 +16,12 @@ Madrid City Council.
 - **Localization:** **Spanish First**, with English translations for key status
   text.
 - **Key Functionality:** Real-time status checking, color-coded accessibility
-  interface, description of restrictions.
+  interface, description of weather/protocol restrictions.
+- **Functional Scope:** Status is derived from Madrid's park meteorological
+  alert protocol (codes 1-6) plus AEMET warning cross-checks.
+- **Out of Scope:** Extraordinary non-weather closures (e.g., fire, police or
+  security incidents, public health restrictions, maintenance or event
+  closures) unless explicitly reflected in the municipal alert feed.
 - **Constraints:** Frontend-focused with hybrid SSG + Client-Side Fetching for
   performance and resilience.
 
@@ -58,6 +63,8 @@ graph LR
 - **CORS:** Enabled by the provider (`Access-Control-Allow-Origin: *`).
 - **Layer Reliability:** The application verifies the layer name includes
   "ALERTAS" to ensure data integrity.
+- **Dataset Scope:** This source is an alerts feed for meteorological park
+  protocol states, not a complete taxonomy of all closure causes.
 
 ### 3.2 Data Mapping
 
@@ -609,6 +616,11 @@ The `useWeatherWarnings` hook:
 
 3. **Zone code hardcoded**: If AEMET reorganizes zones, code needs updating. Low
    risk; zone codes are stable.
+
+4. **Non-weather closures not guaranteed**: The MVP is scoped to weather/protocol
+   signals. Exceptional closures (for example fire, security incidents, or
+   emergency operations) may not be captured unless published via the same alert
+   channels.
 
 #### Potential Future Improvements
 

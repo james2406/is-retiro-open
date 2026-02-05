@@ -8,6 +8,7 @@
     "build:client": "tsc && vite build --outDir dist",
     "build:server": "vite build --ssr src/entry-server.tsx --outDir dist/server",
     "build": "npm run build:client && npm run build:server && tsx prerender.ts",
+    "test": "tsx --test api/**/*.test.ts",
     "preview": "vite preview",
     "generate-og": "tsx scripts/generate-og-images.ts"
   },

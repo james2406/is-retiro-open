@@ -7,8 +7,8 @@ interface WeatherWarningsResult {
 /**
  * Fetches weather warnings from the AEMET proxy endpoint.
  */
-async function fetchWeatherWarnings(): Promise<WeatherWarningsResult> {
-  const response = await fetch("/api/aemet-warnings");
+async function fetchWeatherWarnings(querySuffix = ""): Promise<WeatherWarningsResult> {
+  const response = await fetch(`/api/aemet-warnings${querySuffix}`);
   
   if (!response.ok) {
     throw new Error(`Failed to fetch weather warnings: ${response.status}`);
@@ -29,20 +29,23 @@ export function useWeatherWarnings(): { hasActiveWarning: boolean } {
   const { data } = useQuery({
     queryKey: ["weatherWarnings"],
     queryFn: async () => {
-      // Check for mock mode
+      let querySuffix = "";
+
       if (isBrowser) {
+        // Route mock controls through the API so client/server logic stays in one place.
         const urlParams = new URLSearchParams(window.location.search);
         const mockParam = urlParams.get("mock");
-        const warningParam = urlParams.get("warning");
-
-        if (mockParam === "true" && warningParam) {
-          // Simulate network delay for consistency with other mock data
-          await new Promise((resolve) => setTimeout(resolve, 300));
-          return { hasActiveWarning: warningParam === "true" };
+        if (mockParam === "true") {
+          const warningParam = urlParams.get("warning");
+          const query = new URLSearchParams({ mock: "true" });
+          if (warningParam === "true" || warningParam === "false") {
+            query.set("warning", warningParam);
+          }
+          querySuffix = `?${query.toString()}`;
         }
       }
 
-      return fetchWeatherWarnings();
+      return fetchWeatherWarnings(querySuffix);
     },
     // Cache for 15 minutes client-side (matches server cache)
     staleTime: 15 * 60 * 1000,
@@ -50,6 +53,8 @@ export function useWeatherWarnings(): { hasActiveWarning: boolean } {
     refetchOnWindowFocus: false,
     // Disable background refetching
     refetchInterval: false,
+    // Warning signal is supplementary; no need for repeated retries.
+    retry: false,
     // Only run in browser
     enabled: isBrowser,
   });
