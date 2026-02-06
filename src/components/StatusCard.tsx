@@ -35,7 +35,13 @@ function parseSourceDate(dateStr: string): Date | null {
 
   const date = new Date(year, month - 1, day);
   // Validate the date is real (e.g., not Feb 31)
-  if (isNaN(date.getTime())) return null;
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
 
   return date;
 }

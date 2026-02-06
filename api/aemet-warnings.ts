@@ -179,7 +179,7 @@ function buildMockWarningSignal(
         hasWarningWithin2Hours: false,
         hasWarningLaterToday: true,
         activeWarningSeverity: null,
-        nextWarningOnset: null,
+        nextWarningOnset: new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString(),
         nextWarningSeverity: "moderate",
         fetchedAt: now.toISOString(),
       };

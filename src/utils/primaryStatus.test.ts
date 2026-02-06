@@ -25,3 +25,15 @@ test("later today keeps official status", () => {
   assert.equal(result.mode, "official");
   assert.equal(result.themeCode, 1);
 });
+
+test("null code defaults to official open", () => {
+  const result = resolvePrimaryStatus(null, "likely_closed_now");
+  assert.equal(result.mode, "official");
+  assert.equal(result.themeCode, 1);
+});
+
+test("no advisory keeps official status", () => {
+  const result = resolvePrimaryStatus(2, "none");
+  assert.equal(result.mode, "official");
+  assert.equal(result.themeCode, 2);
+});

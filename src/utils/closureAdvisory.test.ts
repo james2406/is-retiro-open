@@ -19,6 +19,9 @@ function makeSignal(overrides: Partial<WeatherWarningSignal> = {}): WeatherWarni
 test("closed codes suppress predictive advisories", () => {
   const advisory = resolveClosureAdvisory(6, makeSignal({ hasActiveWarning: true }));
   assert.equal(advisory.state, "none");
+
+  const advisory5 = resolveClosureAdvisory(5, makeSignal({ hasActiveWarning: true }));
+  assert.equal(advisory5.state, "none");
 });
 
 test("active warning becomes likely_closed_now", () => {

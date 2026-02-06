@@ -120,13 +120,13 @@ export function detectLocale(): Locale {
     return langParam;
   }
 
-  // 2. Check browser language
+  // 3. Check browser language
   const browserLang = navigator.language.toLowerCase();
   if (browserLang.startsWith("es")) {
     return "es";
   }
 
-  // 3. Default to Spanish for all other languages
+  // 4. Default to Spanish for all other languages
   return "es";
 }
 
