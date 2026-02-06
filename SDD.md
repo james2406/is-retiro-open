@@ -16,7 +16,12 @@ Madrid City Council.
 - **Localization:** **Spanish First**, with English translations for key status
   text.
 - **Key Functionality:** Real-time status checking, color-coded accessibility
-  interface, description of restrictions.
+  interface, description of weather/protocol restrictions.
+- **Functional Scope:** Status is derived from Madrid's park meteorological
+  alert protocol (codes 1-6) plus AEMET warning cross-checks.
+- **Out of Scope:** Extraordinary non-weather closures (e.g., fire, police or
+  security incidents, public health restrictions, maintenance or event
+  closures) unless explicitly reflected in the municipal alert feed.
 - **Constraints:** Frontend-focused with hybrid SSG + Client-Side Fetching for
   performance and resilience.
 
@@ -58,6 +63,8 @@ graph LR
 - **CORS:** Enabled by the provider (`Access-Control-Allow-Origin: *`).
 - **Layer Reliability:** The application verifies the layer name includes
   "ALERTAS" to ensure data integrity.
+- **Dataset Scope:** This source is an alerts feed for meteorological park
+  protocol states, not a complete taxonomy of all closure causes.
 
 ### 3.2 Data Mapping
 
@@ -156,11 +163,21 @@ weather warning integration (see Section 8).
 
 ### 6.1 Mock Mode
 
-To facilitate testing of Red/Closed states without waiting for a storm, the
-application supports query parameters:
+To facilitate testing of confirmed and predictive closure states without waiting
+for live weather events, the application supports query parameters:
 
-- `?mock=true`: Randomly cycles through states (simulating network delay).
-- `?code=6`: Forces a specific state (e.g., Closed).
+- `?mock=true`: Enables mock mode for park + warning data.
+- `?code=1..6`: Forces a specific park state from the Madrid status feed.
+- `?warningScenario=none|active|soon|later`: Forces predictive warning state.
+- `?warning=true|false`: Legacy warning mock flag (maps to `active`/`none`).
+
+Example URLs:
+
+- `?mock=true&code=1&warningScenario=none` (open, no advisory)
+- `?mock=true&code=1&warningScenario=active` (likely closed now advisory)
+- `?mock=true&code=1&warningScenario=soon` (closing soon advisory)
+- `?mock=true&code=1&warningScenario=later` (closing later today advisory)
+- `?mock=true&code=6&warningScenario=none` (officially closed)
 
 ### 6.2 License & Attribution
 
@@ -349,8 +366,13 @@ national weather service).
 **Problem:** When weather conditions deteriorate, the park may close before the
 API updates. Users seeing "ABIERTO" might waste a trip.
 
-**Solution:** If AEMET has issued a weather warning for Madrid AND the park
-status shows open, prompt users to verify on @MADRID before visiting.
+**Solution:** Use a predictive primary-status model combining Madrid park code
+with AEMET warnings:
+
+- **Closed (official):** Madrid status code `5/6`
+- **Closed (predicted):** Park still open/restricted (`1-4`) but AEMET warning is currently active
+- **Closing:** Park open/restricted and next relevant warning starts within 2 hours
+- **Open (watch):** Park open/restricted with warning later today (Madrid time)
 
 ### 8.2 Madrid Park Closure Protocol
 
@@ -488,7 +510,7 @@ API endpoint that fetches from AEMET.
 - AEMET does not enable CORS; direct client-side fetch would fail
 - Proxy keeps API key server-side (not exposed to client)
 - Proxy endpoint allows server-side caching to reduce AEMET requests
-- Client gets fresh data on every page load (not stale from build time)
+- Client gets fresh data on page load and periodic background polling
 
 ```mermaid
 graph LR
@@ -504,58 +526,81 @@ graph LR
 
 1. Client loads page, React hydrates
 2. `useWeatherWarnings` hook fetches `/api/aemet-warnings`
-3. Proxy endpoint checks cache; if stale (>15 min), calls AEMET API
+3. Proxy endpoint checks cache; if stale (>5 min), calls AEMET API
 4. Proxy calls `/avisos_cap/ultimoelaborado/area/72` with API key
 5. Proxy fetches the `datos` URL from response
 6. Proxy filters for zone `722802` and types `VI`/`NE`
-7. Proxy checks `onset` ≤ now ≤ `expires` for active warnings
-8. Returns `{ hasActiveWarning: boolean }` to client
-9. React shows verification prompt if warning active AND park open
+7. Proxy computes predictive signal fields:
+   - `hasActiveWarning`: `onset` ≤ now < `expires`
+   - `hasWarningWithin2Hours`: next warning starts in ≤2h
+   - `hasWarningLaterToday`: next warning is later on same Madrid date
+   - `nextWarningOnset`, `activeWarningSeverity`, `nextWarningSeverity`
+8. Proxy returns full signal payload
+9. Client combines signal + park code in two decision helpers:
+   - `closureAdvisory`: advisory state (`likely_closed_now`, `closing_soon`, `closing_later_today`)
+   - `primaryStatus`: main UI status (`official`, `predicted_closed`, `closing`)
+10. React applies primary status override rules + advisory banner rendering
 
 #### Caching Strategy
 
 The proxy endpoint caches AEMET responses server-side:
 
-- **Cache duration:** 15 minutes (`s-maxage=900`)
-- **Stale-while-revalidate:** 30 minutes (`stale-while-revalidate=1800`)
-- **Rationale:** Warnings change slowly (hours); 15-min freshness is sufficient
+- **Cache duration:** 5 minutes (`s-maxage=300`)
+- **Stale-while-revalidate:** 10 minutes (`stale-while-revalidate=600`)
+- **Rationale:** Faster reaction to short-term warning updates while keeping API usage manageable.
 
 This means:
 
-- First request in 15 min → hits AEMET
+- First request in 5 min window → hits AEMET
 - Subsequent requests → served from edge cache
-- Typical user load patterns result in ~96 AEMET requests/day max
+- Typical upper bound is ~288 AEMET requests/day
 
 ### 8.5 UI Logic
 
-Show verification prompt when:
+Main-status override behavior:
 
-1. `hasActiveWeatherWarning` is true (wind or snow warning active for Madrid)
-2. AND park status is not closed (codes 1-4)
+| Madrid Park Code | Warning Signal State      | Main Status (Big Text)      | Theme  | Notes |
+| ---------------- | ------------------------- | --------------------------- | ------ | ----- |
+| `5-6`            | Any                       | `CERRADO / CLOSED`          | Red    | Official closure always wins |
+| `1-4`            | `likely_closed_now`       | `CERRADO / CLOSED`          | Red    | Predicted closure override from active warning |
+| `1-4`            | `closing_soon`            | `CIERRE INMINENTE / CLOSING`          | Light Red | Predicted near-term closure |
+| `1-4`            | `closing_later_today`     | Official code-based status  | Code theme | Advisory-only |
+| `1-4`            | `none`                    | Official code-based status  | Code theme | No advisory |
 
-| Park Status        | Weather Warning Active | UI                                                   |
-| ------------------ | ---------------------- | ---------------------------------------------------- |
-| Open (1-4)         | No                     | (nothing)                                            |
-| Open (1-4)         | Yes                    | "Alerta meteorológica · Verifica en @MADRID →" (box) |
-| Closed (5-6)       | Any                    | (nothing)                                            |
+Advisory banner behavior:
 
-When weather warning is active AND park shows open (code 1), the status text
-changes from "ABIERTO" to "ABIERTO*" to indicate uncertainty.
+- For `likely_closed_now`, `closing_soon`, and `closing_later_today`, show a
+  verification banner linking to `@MADRID`.
+- Advisory banner copy is intentionally neutral and does **not** show a single
+  onset time (to avoid implying an exact closure minute).
+- When `likely_closed_now` overrides the main status, show a small transparency
+  note: status adjusted from active AEMET warning; official park feed may lag.
+
+When `closing_later_today` applies and park code is `1`, the big text shows
+`ABIERTO*/OPEN*` (asterisk uncertainty marker).
+In this state, the subtitle switches to `closingLaterTodayDescription`
+(`Posible cierre más tarde hoy.` / `May close later today.`), replacing regular
+hours copy.
 
 #### Translations
 
-| Key            | Spanish                                          | English                                    |
-| -------------- | ------------------------------------------------ | ------------------------------------------ |
-| `weatherAlert` | "Alerta meteorológica · Verifica en @MADRID →"   | "Weather warning · Verify on @MADRID →"    |
+| Key                     | Spanish                                                              | English                                              |
+| ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
+| `likelyClosedNowAlert`  | "Aviso activo · Verifica en @MADRID →" | "Active warning · Verify on @MADRID →" |
+| `closingSoonAlert`      | "Aviso meteorológico · Verifica en @MADRID →" | "Weather warning · Verify on @MADRID →" |
+| `closingLaterTodayAlert` | "Aviso meteorológico · Verifica en @MADRID →" | "Weather warning · Verify on @MADRID →" |
+| `predictedClosedBig`    | "CERRADO"                                                            | "CLOSED"                                             |
+| `predictedClosedDescription` | "Cierre probable por aviso meteorológico activo." | "Likely closure due to an active weather warning." |
+| `closingBig`            | "CIERRE INMINENTE"                                                             | "CLOSING"                                            |
+| `closingDescription`    | "Posible cierre inminente por aviso meteorológico." | "Likely to close soon due to weather warnings." |
 
 The verify link points to `https://x.com/MADRID`. The prompt is styled as a
 prominent clickable box with an alert icon, not a subtle text link.
 
 #### No Severity Differentiation
 
-MVP shows the same message for yellow, orange, and red warnings. If AEMET has
-issued any warning, the park should already be closed per the threshold analysis
-above.
+Severity is parsed and returned in the API response, but MVP still uses the
+same user-facing advisory copy regardless of severity level.
 
 ### 8.6 Implementation
 
@@ -569,10 +614,13 @@ above.
 
 | File                              | Action | Change                                   |
 | --------------------------------- | ------ | ---------------------------------------- |
-| `api/aemet-warnings.ts`           | Create | Proxy endpoint that calls AEMET API      |
-| `src/hooks/useWeatherWarnings.ts` | Create | Client hook to fetch from proxy endpoint |
-| `src/components/StatusCard.tsx`   | Modify | Show weather alert verification prompt   |
-| `src/i18n.ts`                     | Modify | Add `weatherAlert` translation           |
+| `api/aemet-warnings.ts`           | Create | Proxy endpoint + predictive warning signal builder |
+| `src/hooks/useWeatherWarnings.ts` | Create | Client hook returning full warning signal |
+| `src/components/StatusCard.tsx`   | Modify | Render predictive advisory banners        |
+| `src/utils/closureAdvisory.ts`    | Create | Conservative decision helper for advisory state |
+| `src/utils/primaryStatus.ts`      | Create | Primary status override resolver          |
+| `src/i18n.ts`                     | Modify | Add predictive advisory translation keys  |
+| `src/types.ts`                    | Modify | Add `WeatherWarningSignal` type           |
 
 #### Proxy Endpoint Behavior
 
@@ -581,48 +629,67 @@ The `/api/aemet-warnings` endpoint:
 1. Calls AEMET API `/avisos_cap/ultimoelaborado/area/72` with API key
 2. Fetches the `datos` URL from response to get warning data
 3. Filters warnings for zone `722802` and types `VI` (wind) or `NE` (snow)
-4. Checks `onset` ≤ now ≤ `expires` for active warnings
-5. Returns `{ hasActiveWarning: boolean }`
-6. On error, returns `{ hasActiveWarning: false }` (fail open)
+4. Computes active + upcoming windows (now, within 2h, later today)
+5. Returns:
 
-**Note:** Response format should be verified with a real API key before
-implementation.
+```json
+{
+  "hasActiveWarning": false,
+  "hasWarningWithin2Hours": true,
+  "hasWarningLaterToday": false,
+  "activeWarningSeverity": null,
+  "nextWarningOnset": "2026-02-05T13:00:00.000Z",
+  "nextWarningSeverity": "moderate",
+  "fetchedAt": "2026-02-05T12:00:00.000Z"
+}
+```
+
+6. On error, returns fail-open empty signal (all flags false)
+7. Supports mock scenarios via `warningScenario=none|active|soon|later`,
+   plus legacy `warning=true|false` compatibility in mock mode.
 
 #### Client Hook Behavior
 
 The `useWeatherWarnings` hook:
 
 1. Fetches `/api/aemet-warnings` on mount
-2. Caches result for 15 minutes (client-side)
+2. Caches result for 5 minutes (client-side)
 3. Does not refetch on window focus
-4. Returns `hasActiveWarning` boolean (defaults to `false`)
+4. Refetches every 2 minutes while page is open
+5. Returns full warning signal object (defaults to empty signal on error)
 
 ### 8.7 Limitations and Future Improvements
 
 #### Current Limitations
 
-1. **15-minute cache staleness**: Warnings issued within the cache window won't
+1. **5-minute cache staleness**: Warnings issued within the cache window won't
    show immediately. Acceptable since warnings typically last hours.
 
-2. **No real-time updates**: If a warning is issued while user has page open,
-   they won't see it until page reload (same as park status).
+2. **Not instant real-time**: Client polling runs every 2 minutes and proxy
+   cache is 5 minutes, so short delays are still possible.
 
 3. **Zone code hardcoded**: If AEMET reorganizes zones, code needs updating. Low
    risk; zone codes are stable.
 
+4. **Non-weather closures not guaranteed**: The MVP is scoped to weather/protocol
+   signals. Exceptional closures (for example fire, security incidents, or
+   emergency operations) may not be captured unless published via the same alert
+   channels.
+
 #### Potential Future Improvements
 
 - **Push notifications**: For users who opt in, notify when warnings are issued.
-- **Polling**: Refetch warnings periodically while page is open (low priority
-  since warnings last hours).
+- **Adaptive polling**: Increase refresh frequency when a warning window is near
+  (for example, when onset is within 60 minutes).
+- **Severity-aware UI**: Different advisory intensity/copy for yellow/orange/red.
 
 ### 8.8 Fallback Behavior
 
-If AEMET RSS is unreachable when proxy is called:
+If AEMET API is unreachable when proxy is called:
 
 - Log error to console
-- Return `{ hasActiveWarning: false }`
-- Client continues without weather alert prompt
+- Return empty warning signal (all advisory flags false)
+- Client continues without predictive advisory prompt
 - Core park status functionality unaffected
 
 Weather warnings are supplementary; the site must work without them.

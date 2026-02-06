@@ -2,6 +2,8 @@ export type StatusCode = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type StatusType = "open" | "restricted" | "closed";
 
+export type WarningSeverity = "minor" | "moderate" | "severe" | "extreme" | null;
+
 export interface RetiroStatus {
   status: StatusType;
   code: StatusCode;
@@ -11,6 +13,16 @@ export interface RetiroStatus {
   updated_at: string;
   /** Date when Madrid last updated the alert (format: "DD/MM/YYYY" from FECHA_INCIDENCIA) */
   source_updated_at: string | null;
+}
+
+export interface WeatherWarningSignal {
+  hasActiveWarning: boolean;
+  hasWarningWithin2Hours: boolean;
+  hasWarningLaterToday: boolean;
+  activeWarningSeverity: WarningSeverity;
+  nextWarningOnset: string | null;
+  nextWarningSeverity: WarningSeverity;
+  fetchedAt: string | null;
 }
 
 export interface StatusTheme {
@@ -25,6 +37,12 @@ export const STATUS_THEMES: Record<StatusCode, StatusTheme> = {
   4: { bgColor: "#E67E22", textColor: "#FFFFFF" },
   5: { bgColor: "#C0392B", textColor: "#FFFFFF" },
   6: { bgColor: "#C0392B", textColor: "#FFFFFF" },
+};
+
+// Distinct from CLOSED red, used for predictive near-term closing state.
+export const CLOSING_THEME: StatusTheme = {
+  bgColor: "#E74C3C",
+  textColor: "#FFFFFF",
 };
 
 export const ERROR_THEME: StatusTheme = {
