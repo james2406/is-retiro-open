@@ -137,8 +137,8 @@ export function getMockData(code?: number): RetiroStatus {
   const messages: Record<number, string> = {
     1: "Abierto según horario habitual",
     2: "Incidencias en algunas zonas",
-    3: "Alerta amarilla por viento",
-    4: "Alerta naranja - Eventos suspendidos",
+    3: "Alerta amarilla: acceso restringido y no permanecer bajo el arbolado",
+    4: "Alerta naranja: acceso restringido, eventos suspendidos y recomendación de abandonar el parque",
     5: "Cerrado por condiciones meteorológicas",
     6: "Cerrado por condiciones meteorológicas",
   };

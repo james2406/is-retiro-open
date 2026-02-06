@@ -75,8 +75,8 @@ graph LR
 | -------- | --------------- | ---------------------- | ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | **1**    | Abierto         | **ABIERTO / OPEN**     | **Green** (`#2ECC71`)    | White      | Abierto en horario habitual.<br>_Open regular hours._                                                                              |
 | **2**    | Incidencias     | **ABIERTO\* / OPEN\*** | **Blue** (`#3498DB`)     | White      | **Incidencias:** [Display `OBSERVACIONES` field].<br>_Incidents reported._                                                         |
-| **3**    | Alerta Amarilla | **ABIERTO\* / OPEN\*** | **Yellow** (`#F1C40F`)   | **Black**  | **Precaución:** Zonas infantiles y deportivas restringidas.<br>_Caution: Restricted access to specific zones._                     |
-| **4**    | Alerta Naranja  | **ABIERTO\* / OPEN\*** | **Orange** (`#E67E22`)   | White      | **Eventos suspendidos.** Se recomienda no permanecer en el parque.<br>_Events suspended. Recommendation: Do not stay in the park._ |
+| **3**    | Alerta Amarilla | **ABIERTO\* / OPEN\*** | **Yellow** (`#F1C40F`)   | **Black**  | **Precaución:** Se restringe el acceso a zonas infantiles, deportivas y de mayores, y a los Jardines de Cecilio Rodríguez (acceso al Pabellón por la puerta del Paseo de Uruguay). Se recomienda no permanecer bajo el arbolado.<br>_Caution: Access is restricted to children's, sports, and senior areas, and Cecilio Rodríguez Gardens (Pavilion access via the Paseo de Uruguay gate). Do not stay under trees._ |
+| **4**    | Alerta Naranja  | **ABIERTO\* / OPEN\*** | **Orange** (`#E67E22`)   | White      | **Restricciones de acceso:** zonas infantiles, deportivas y de mayores; área canina, Pinar de San Blas, Cementerio, Planteles, Jardines de Cecilio Rodríguez y Jardines de Herrero Palacios. **Eventos al aire libre suspendidos.** Se recomienda abandonar el parque si no es imprescindible permanecer.<br>_Access restrictions apply to designated areas; outdoor events are suspended. Recommendation: leave the park unless staying is essential._ |
 | **5**    | Previsión Roja  | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Standard Red Alert)._                                |
 | **6**    | Cerrado         | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Emergency Closure)._                                 |
 
@@ -387,9 +387,9 @@ Source:
 | Level      | Wind (normal conditions) | Wind (heat >35°C or wet soil >75%) | Snow (24h) | Action                                               |
 | ---------- | ------------------------ | ---------------------------------- | ---------- | ---------------------------------------------------- |
 | **Green**  | <40 km/h                 | <30 km/h                           | <2 cm      | Normal operations                                    |
-| **Yellow** | 40-50 km/h               | 30-40 km/h                         | 2-5 cm     | Children's/sports areas closed; stay away from trees |
-| **Orange** | 50-65 km/h               | 40-55 km/h                         | 5-20 cm    | Events cancelled; recommendation to leave park       |
-| **Red**    | ≥65 km/h                 | ≥55 km/h                           | >20 cm     | Full closure                                         |
+| **Yellow** | 40-50 km/h               | 30-40 km/h                         | 2-5 cm     | Access restricted to children's/sports/senior areas and Jardines de Cecilio Rodríguez; stay away from trees |
+| **Orange** | 50-65 km/h               | 40-55 km/h                         | 5-20 cm    | Access restricted in designated zones; outdoor events cancelled; recommendation to leave park |
+| **Red**    | ≥65 km/h                 | ≥55 km/h                           | ≥20 cm     | Full closure                                         |
 
 #### Protocol Effectiveness
 
