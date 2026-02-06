@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { WarningSeverity } from "../src/types";
 
 /**
  * AEMET Warning response structure parsed from CAP XML
@@ -10,8 +11,6 @@ export interface AemetWarning {
   fenomeno?: string; // VI (wind), NE (snow), etc.
   zona?: string; // Zone code (e.g., 722802)
 }
-
-type WarningSeverity = "minor" | "moderate" | "severe" | "extreme" | null;
 
 export interface AemetWarningSignal {
   hasActiveWarning: boolean;
