@@ -52,12 +52,12 @@ const translations: Record<Locale, Translations> = {
       3: {
         big: "ABIERTO*",
         description:
-          "Precaución: acceso restringido a zonas infantiles, deportivas y de mayores, y a Jardines de Cecilio Rodríguez (acceso al Pabellón por la puerta del Paseo de Uruguay). No permanecer bajo el arbolado.",
+          "Precaución: acceso restringido a zonas infantiles, deportivas y de mayores, y a Jardines de Cecilio Rodríguez. Evita permanecer bajo el arbolado.",
       },
       4: {
         big: "ABIERTO*",
         description:
-          "Acceso restringido a zonas infantiles, deportivas y de mayores; área canina, Pinar de San Blas, Cementerio, Planteles, Jardines de Cecilio Rodríguez y Jardines de Herrero Palacios. Eventos al aire libre suspendidos; se recomienda abandonar el parque.",
+          "Acceso restringido en varias zonas, incluidos los Jardines de Cecilio Rodríguez y Herrero Palacios. Eventos al aire libre suspendidos; se recomienda abandonar el parque.",
       },
       5: { big: "CERRADO", description: "Cerrado por alerta meteorológica." },
       6: { big: "CERRADO", description: "Cerrado por alerta meteorológica." },
@@ -88,12 +88,12 @@ const translations: Record<Locale, Translations> = {
       3: {
         big: "OPEN*",
         description:
-          "Caution: restricted access to children's, sports, and senior areas, and to Cecilio Rodríguez Gardens (Pavilion access via the Paseo de Uruguay gate). Do not stay under trees.",
+          "Caution: restricted access to children's, sports, and senior areas, and to Cecilio Rodríguez Gardens. Avoid staying under trees.",
       },
       4: {
         big: "OPEN*",
         description:
-          "Restricted access to children's, sports, and senior areas; dog area, Pinar de San Blas, Cemetery, Planteles, Cecilio Rodríguez Gardens, and Herrero Palacios Gardens. Outdoor events suspended; visitors are advised to leave the park.",
+          "Restricted access in multiple areas, including Cecilio Rodríguez and Herrero Palacios Gardens. Outdoor events are suspended; visitors are advised to leave the park.",
       },
       5: { big: "CLOSED", description: "Closed due to weather warning." },
       6: { big: "CLOSED", description: "Closed due to weather warning." },
