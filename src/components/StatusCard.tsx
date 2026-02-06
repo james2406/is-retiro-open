@@ -11,6 +11,7 @@ import {
   resolveClosureAdvisory,
   type ClosureAdvisoryState,
 } from "../utils/closureAdvisory";
+import { formatIncidentHours } from "../utils/incidentHours";
 import { resolvePrimaryStatus } from "../utils/primaryStatus";
 
 interface StatusCardProps {
@@ -129,13 +130,11 @@ export function StatusCard({
 
         // Build description, integrating incident hours if present
         if (data.incidents && data.code >= 5) {
-        // Treat both closing (5) and closed (6) as closed
-        description = isSpanish
-          ? `Cerrado por alerta meteorológica (${data.incidents}).`
-          : `Closed due to weather alert (${data.incidents.replace(
-              " a ",
-              "–"
-            )}).`;
+          // Treat both closing (5) and closed (6) as closed
+          const formattedIncidentHours = formatIncidentHours(data.incidents);
+          description = isSpanish
+            ? `Cerrado por alerta meteorológica (${formattedIncidentHours}).`
+            : `Closed due to weather warning (${formattedIncidentHours}).`;
         } else {
           description =
             advisoryState === "closing_later_today"
@@ -144,7 +143,8 @@ export function StatusCard({
         }
       }
 
-      showObservations = !!data.observations && data.code === 2;
+      // Madrid observations are published in Spanish; avoid mixed-language blocks in English UI.
+      showObservations = isSpanish && !!data.observations && data.code === 2;
     } else {
       // Fallback for safety (should be covered by loading/error blocks)
       theme = ERROR_THEME;
@@ -233,9 +233,7 @@ export function StatusCard({
           {/* Context note when main status is upgraded from open/restricted to predicted closed */}
           {data && advisoryState === "likely_closed_now" && data.code <= 4 && (
             <p className="mt-3 text-sm opacity-80" style={{ color: theme.textColor }}>
-              {isSpanish
-                ? "Estado principal ajustado por aviso activo de AEMET; el parte oficial del parque puede retrasarse."
-                : "Main status adjusted from active AEMET warning; official park feed may lag."}
+              {t.adjustedStatusNote}
             </p>
           )}
 
