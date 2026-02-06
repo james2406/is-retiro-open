@@ -11,10 +11,10 @@ type Locale = (typeof LOCALES)[number];
 
 const SITE_URL = "https://www.estaabiertoelretiro.com";
 
-// Simple meta descriptions for SEO
+// Static meta descriptions aimed at search snippets.
 const META_DESCRIPTIONS: Record<Locale, string> = {
-  es: "Consulta en tiempo real el estado del Parque del Retiro de Madrid.",
-  en: "Check real-time status of Retiro Park in Madrid.",
+  es: "¿Está abierto el Retiro ahora? Consulta el estado en tiempo real del Parque del Retiro de Madrid, con datos del Ayuntamiento y avisos meteorológicos.",
+  en: "Is Retiro Park open now? Check real-time Retiro Park status in Madrid with official city data and weather warning context.",
 };
 
 // Open Graph status text (matches i18n.ts status.big values)
