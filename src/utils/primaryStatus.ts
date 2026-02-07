@@ -1,5 +1,4 @@
 import type { StatusCode } from "../types";
-import type { ClosureAdvisoryState } from "./closureAdvisory";
 
 export type PrimaryStatusMode = "official";
 
@@ -15,8 +14,7 @@ export interface PrimaryStatusResolution {
  * - Never override Madrid's official park status from weather advisories.
  */
 export function resolvePrimaryStatus(
-  code: StatusCode | null | undefined,
-  _advisoryState: ClosureAdvisoryState
+  code: StatusCode | null | undefined
 ): PrimaryStatusResolution {
   if (!code) {
     return { mode: "official", themeCode: 1 };

@@ -108,7 +108,7 @@ export function StatusCard({
       const code = data.code as StatusCode;
       const advisory = resolveClosureAdvisory(code, weatherWarnings);
       advisoryState = advisory.state;
-      const primaryStatus = resolvePrimaryStatus(code, advisoryState);
+      const primaryStatus = resolvePrimaryStatus(code);
       theme = STATUS_THEMES[primaryStatus.themeCode] || STATUS_THEMES[1];
 
       bigText = t.status[code].big;

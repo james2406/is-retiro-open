@@ -370,9 +370,9 @@ API updates. Users seeing "ABIERTO" might waste a trip.
 AEMET warnings as advisory context:
 
 - **Closed (official):** Madrid status code `5/6`
-- **Open with active warning:** Park still open/restricted (`1-4`) but an active warning may indicate imminent/ongoing closure risk
-- **Open (watch soon):** Park open/restricted with warning starting in <=2 hours
-- **Open (watch):** Park open/restricted with warning later today (Madrid time)
+- **Open with active warning (`likely_closed_now`):** Park code `1-4`, but an active warning may indicate imminent/ongoing closure risk
+- **Open (watch soon - `warning_soon`):** Park code `1-4` with warning starting in ≤2 hours
+- **Open (watch - `closing_later_today`):** Park code `1-4` with warning later today (Madrid time)
 
 ### 8.2 Madrid Park Closure Protocol
 
@@ -563,7 +563,7 @@ Main-status behavior (no override):
 | ---------------- | ------------------------- | --------------------------- | ------ | ----- |
 | `5-6`            | Any                       | `CERRADO / CLOSED`          | Red    | Official closure always wins |
 | `1-4`            | `likely_closed_now`       | Official code-based status  | Code theme | Advisory-only (active warning; may already be closed) |
-| `1-4`            | `warning_soon`            | Official code-based status  | Code theme | Advisory-only (warning starts in <=2h) |
+| `1-4`            | `warning_soon`            | Official code-based status  | Code theme | Advisory-only (warning starts in ≤2h) |
 | `1-4`            | `closing_later_today`     | Official code-based status  | Code theme | Advisory-only |
 | `1-4`            | `none`                    | Official code-based status  | Code theme | No advisory |
 
@@ -585,11 +585,12 @@ In these states, the subtitle switches to an advisory description
 
 | Key                     | Spanish                                                              | English                                              |
 | ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
-| `likelyClosedNowAlert`  | "Alerta activa · Podría estar cerrado · Verifica en @MADRID →" | "Active warning · It may already be closed · Verify on @MADRID →" |
+| `likelyClosedNowAlert`  | "Alerta activa · Verifica en @MADRID →" | "Active warning · Verify on @MADRID →" |
 | `likelyClosedNowDescription` | "Podría estar cerrado por alerta meteorológica activa." | "It may already be closed due to an active weather warning." |
-| `warningSoonAlert`      | "Aviso próximo · Podría cerrar · Verifica en @MADRID →" | "Warning soon · It may close · Verify on @MADRID →" |
-| `closingLaterTodayAlert` | "Aviso hoy · Podría cerrar más tarde · Verifica en @MADRID →" | "Warning today · It may close later · Verify on @MADRID →" |
+| `warningSoonAlert`      | "Aviso próximo · Verifica en @MADRID →" | "Warning soon · Verify on @MADRID →" |
+| `closingLaterTodayAlert` | "Aviso hoy · Verifica en @MADRID →" | "Warning today · Verify on @MADRID →" |
 | `warningSoonDescription` | "Podría cerrar pronto." | "May close soon." |
+| `closingLaterTodayDescription` | "Posible cierre más tarde hoy." | "May close later today." |
 
 The verify link points to `https://x.com/MADRID`. The prompt is styled as a
 prominent clickable box with an alert icon, not a subtle text link.
@@ -628,7 +629,7 @@ The `/api/aemet-warnings` endpoint:
 3. Filters warnings for zone `722802` and types `VI` (wind) or `NE` (snow)
 4. Computes active + upcoming windows (now, within 2h, later today)
 5. Client-side advisory helper classifies upcoming warnings:
-   - `warning_soon` when onset is within <=2h
+   - `warning_soon` when onset is within ≤2h
    - `closing_later_today` when onset is later on the same Madrid date
 6. Returns:
 

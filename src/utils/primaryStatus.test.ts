@@ -3,37 +3,37 @@ import test from "node:test";
 import { resolvePrimaryStatus } from "./primaryStatus";
 
 test("official closed always wins", () => {
-  const result = resolvePrimaryStatus(6, "likely_closed_now");
+  const result = resolvePrimaryStatus(6);
   assert.equal(result.mode, "official");
   assert.equal(result.themeCode, 6);
 });
 
 test("active warning keeps official status", () => {
-  const result = resolvePrimaryStatus(1, "likely_closed_now");
+  const result = resolvePrimaryStatus(1);
   assert.equal(result.mode, "official");
   assert.equal(result.themeCode, 1);
 });
 
 test("soon warning keeps official status", () => {
-  const result = resolvePrimaryStatus(1, "warning_soon");
+  const result = resolvePrimaryStatus(1);
   assert.equal(result.mode, "official");
   assert.equal(result.themeCode, 1);
 });
 
 test("later today keeps official status", () => {
-  const result = resolvePrimaryStatus(1, "closing_later_today");
+  const result = resolvePrimaryStatus(1);
   assert.equal(result.mode, "official");
   assert.equal(result.themeCode, 1);
 });
 
 test("null code defaults to official open", () => {
-  const result = resolvePrimaryStatus(null, "likely_closed_now");
+  const result = resolvePrimaryStatus(null);
   assert.equal(result.mode, "official");
   assert.equal(result.themeCode, 1);
 });
 
 test("no advisory keeps official status", () => {
-  const result = resolvePrimaryStatus(2, "none");
+  const result = resolvePrimaryStatus(2);
   assert.equal(result.mode, "official");
   assert.equal(result.themeCode, 2);
 });

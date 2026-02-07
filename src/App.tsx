@@ -8,7 +8,6 @@ import { STATUS_THEMES, ERROR_THEME } from "./types";
 import { detectLocale, getTranslations } from "./i18n";
 import type { StatusCode, RetiroStatus } from "./types";
 import type { Locale } from "./i18n";
-import { resolveClosureAdvisory } from "./utils/closureAdvisory";
 import { resolvePrimaryStatus } from "./utils/primaryStatus";
 
 interface AppProps {
@@ -32,8 +31,7 @@ function App({ initialData = null, initialLocale }: AppProps) {
   }, [initialLocale]);
 
   const t = getTranslations(locale);
-  const advisory = resolveClosureAdvisory(data?.code, weatherWarnings);
-  const primaryStatus = resolvePrimaryStatus(data?.code, advisory.state);
+  const primaryStatus = resolvePrimaryStatus(data?.code);
 
   // Determine current theme for consistent styling
   let theme;
