@@ -33,13 +33,13 @@ test("active warning becomes likely_closed_now", () => {
   assert.equal(advisory.state, "likely_closed_now");
 });
 
-test("upcoming warning inside 2 hours becomes closing_soon", () => {
+test("upcoming warning inside 2 hours becomes warning_soon", () => {
   const advisory = resolveClosureAdvisory(
     1,
-    makeSignal({ hasWarningWithin2Hours: true, nextWarningOnset: "2026-02-05T13:00:00.000Z" })
+    makeSignal({ hasWarningWithin2Hours: true, nextWarningOnset: "2026-02-05T12:20:00.000Z" })
   );
 
-  assert.equal(advisory.state, "closing_soon");
+  assert.equal(advisory.state, "warning_soon");
 });
 
 test("later warning today becomes closing_later_today", () => {

@@ -5,7 +5,7 @@ import type {
   StatusTheme,
   WeatherWarningSignal,
 } from "../types";
-import { STATUS_THEMES, ERROR_THEME, CLOSING_THEME } from "../types";
+import { STATUS_THEMES, ERROR_THEME } from "../types";
 import type { Translations } from "../i18n";
 import {
   resolveClosureAdvisory,
@@ -108,38 +108,39 @@ export function StatusCard({
       const code = data.code as StatusCode;
       const advisory = resolveClosureAdvisory(code, weatherWarnings);
       advisoryState = advisory.state;
-      const primaryStatus = resolvePrimaryStatus(code, advisoryState);
-      theme =
-        primaryStatus.mode === "closing"
-          ? CLOSING_THEME
-          : STATUS_THEMES[primaryStatus.themeCode] || STATUS_THEMES[1];
+      const primaryStatus = resolvePrimaryStatus(code);
+      theme = STATUS_THEMES[primaryStatus.themeCode] || STATUS_THEMES[1];
 
-      if (primaryStatus.mode === "predicted_closed") {
-        bigText = t.predictedClosedBig;
-        description = t.predictedClosedDescription;
-      } else if (primaryStatus.mode === "closing") {
-        bigText = t.closingBig;
-        description = t.closingDescription;
+      bigText = t.status[code].big;
+      // Add an asterisk when code 1 has a warning advisory.
+      // Codes 2-4 already include asterisks in translations.
+      if (
+        (
+          advisoryState === "likely_closed_now" ||
+          advisoryState === "warning_soon" ||
+          advisoryState === "closing_later_today"
+        ) &&
+        code === 1
+      ) {
+        bigText = bigText + "*";
+      }
+
+      // Build description, integrating incident hours if present
+      if (data.incidents && data.code >= 5) {
+        // Treat both closing (5) and closed (6) as closed
+        const formattedIncidentHours = formatIncidentHours(data.incidents);
+        description = isSpanish
+          ? `Cerrado por alerta meteorológica (${formattedIncidentHours}).`
+          : `Closed due to weather warning (${formattedIncidentHours}).`;
       } else {
-        bigText = t.status[code].big;
-        // Add an asterisk when code 1 has a later-today warning.
-        // Codes 2-4 already include asterisks in translations.
-        if (advisoryState === "closing_later_today" && code === 1) {
-          bigText = bigText + "*";
-        }
-
-        // Build description, integrating incident hours if present
-        if (data.incidents && data.code >= 5) {
-          // Treat both closing (5) and closed (6) as closed
-          const formattedIncidentHours = formatIncidentHours(data.incidents);
-          description = isSpanish
-            ? `Cerrado por alerta meteorológica (${formattedIncidentHours}).`
-            : `Closed due to weather warning (${formattedIncidentHours}).`;
+        if (advisoryState === "likely_closed_now") {
+          description = t.likelyClosedNowDescription;
+        } else if (advisoryState === "warning_soon") {
+          description = t.warningSoonDescription;
+        } else if (advisoryState === "closing_later_today") {
+          description = t.closingLaterTodayDescription;
         } else {
-          description =
-            advisoryState === "closing_later_today"
-              ? t.closingLaterTodayDescription
-              : t.status[code].description;
+          description = t.status[code].description;
         }
       }
 
@@ -157,8 +158,8 @@ export function StatusCard({
 
   if (advisoryState === "likely_closed_now") {
     advisoryText = t.likelyClosedNowAlert;
-  } else if (advisoryState === "closing_soon") {
-    advisoryText = t.closingSoonAlert;
+  } else if (advisoryState === "warning_soon") {
+    advisoryText = t.warningSoonAlert;
   } else if (advisoryState === "closing_later_today") {
     advisoryText = t.closingLaterTodayAlert;
   }
@@ -230,7 +231,7 @@ export function StatusCard({
             </a>
           )}
 
-          {/* Context note when main status is upgraded from open/restricted to predicted closed */}
+          {/* Context note when active warning may predate official park feed updates */}
           {data && advisoryState === "likely_closed_now" && data.code <= 4 && (
             <p className="mt-3 text-sm opacity-80" style={{ color: theme.textColor }}>
               {t.adjustedStatusNote}

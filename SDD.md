@@ -366,13 +366,13 @@ national weather service).
 **Problem:** When weather conditions deteriorate, the park may close before the
 API updates. Users seeing "ABIERTO" might waste a trip.
 
-**Solution:** Use a predictive primary-status model combining Madrid park code
-with AEMET warnings:
+**Solution:** Keep Madrid park code as the only main-status source, and use
+AEMET warnings as advisory context:
 
 - **Closed (official):** Madrid status code `5/6`
-- **Closed (predicted):** Park still open/restricted (`1-4`) but AEMET warning is currently active
-- **Closing:** Park open/restricted and next relevant warning starts within 2 hours
-- **Open (watch):** Park open/restricted with warning later today (Madrid time)
+- **Open with active warning (`likely_closed_now`):** Park code `1-4`, but an active warning may indicate imminent/ongoing closure risk
+- **Open (watch soon - `warning_soon`):** Park code `1-4` with warning starting in ≤2 hours
+- **Open (watch - `closing_later_today`):** Park code `1-4` with warning later today (Madrid time)
 
 ### 8.2 Madrid Park Closure Protocol
 
@@ -537,9 +537,9 @@ graph LR
    - `nextWarningOnset`, `activeWarningSeverity`, `nextWarningSeverity`
 8. Proxy returns full signal payload
 9. Client combines signal + park code in two decision helpers:
-   - `closureAdvisory`: advisory state (`likely_closed_now`, `closing_soon`, `closing_later_today`)
-   - `primaryStatus`: main UI status (`official`, `predicted_closed`, `closing`)
-10. React applies primary status override rules + advisory banner rendering
+   - `closureAdvisory`: advisory state (`likely_closed_now`, `warning_soon`, `closing_later_today`)
+   - `primaryStatus`: main UI status (`official`)
+10. React keeps official status as primary and adds advisory banner messaging
 
 #### Caching Strategy
 
@@ -557,42 +557,40 @@ This means:
 
 ### 8.5 UI Logic
 
-Main-status override behavior:
+Main-status behavior (no override):
 
 | Madrid Park Code | Warning Signal State      | Main Status (Big Text)      | Theme  | Notes |
 | ---------------- | ------------------------- | --------------------------- | ------ | ----- |
 | `5-6`            | Any                       | `CERRADO / CLOSED`          | Red    | Official closure always wins |
-| `1-4`            | `likely_closed_now`       | `CERRADO / CLOSED`          | Red    | Predicted closure override from active warning |
-| `1-4`            | `closing_soon`            | `CIERRE INMINENTE / CLOSING`          | Light Red | Predicted near-term closure |
+| `1-4`            | `likely_closed_now`       | Official code-based status  | Code theme | Advisory-only (active warning; may already be closed) |
+| `1-4`            | `warning_soon`            | Official code-based status  | Code theme | Advisory-only (warning starts in ≤2h) |
 | `1-4`            | `closing_later_today`     | Official code-based status  | Code theme | Advisory-only |
 | `1-4`            | `none`                    | Official code-based status  | Code theme | No advisory |
 
 Advisory banner behavior:
 
-- For `likely_closed_now`, `closing_soon`, and `closing_later_today`, show a
+- For `likely_closed_now`, `warning_soon`, and `closing_later_today`, show a
   verification banner linking to `@MADRID`.
 - Advisory banner copy is intentionally neutral and does **not** show a single
   onset time (to avoid implying an exact closure minute).
-- When `likely_closed_now` overrides the main status, show a small transparency
-  note: status adjusted from active AEMET warning; official park feed may lag.
+- When `likely_closed_now` is active, show a transparency note that official
+  park updates may lag during active AEMET warnings.
 
-When `closing_later_today` applies and park code is `1`, the big text shows
+When `warning_soon` or `closing_later_today` applies and park code is `1`, the big text shows
 `ABIERTO*/OPEN*` (asterisk uncertainty marker).
-In this state, the subtitle switches to `closingLaterTodayDescription`
-(`Posible cierre más tarde hoy.` / `May close later today.`), replacing regular
-hours copy.
+In these states, the subtitle switches to an advisory description
+(`warningSoonDescription` or `closingLaterTodayDescription`) instead of regular hours copy.
 
 #### Translations
 
 | Key                     | Spanish                                                              | English                                              |
 | ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
-| `likelyClosedNowAlert`  | "Aviso activo · Verifica en @MADRID →" | "Active warning · Verify on @MADRID →" |
-| `closingSoonAlert`      | "Aviso meteorológico · Verifica en @MADRID →" | "Weather warning · Verify on @MADRID →" |
-| `closingLaterTodayAlert` | "Aviso meteorológico · Verifica en @MADRID →" | "Weather warning · Verify on @MADRID →" |
-| `predictedClosedBig`    | "CERRADO"                                                            | "CLOSED"                                             |
-| `predictedClosedDescription` | "Cierre probable por aviso meteorológico activo." | "Likely closure due to an active weather warning." |
-| `closingBig`            | "CIERRE INMINENTE"                                                             | "CLOSING"                                            |
-| `closingDescription`    | "Posible cierre inminente por aviso meteorológico." | "Likely to close soon due to weather warnings." |
+| `likelyClosedNowAlert`  | "Alerta activa · Verifica en @MADRID →" | "Active warning · Verify on @MADRID →" |
+| `likelyClosedNowDescription` | "Podría estar cerrado por alerta meteorológica activa." | "It may already be closed due to an active weather warning." |
+| `warningSoonAlert`      | "Aviso próximo · Verifica en @MADRID →" | "Warning soon · Verify on @MADRID →" |
+| `closingLaterTodayAlert` | "Aviso hoy · Verifica en @MADRID →" | "Warning today · Verify on @MADRID →" |
+| `warningSoonDescription` | "Podría cerrar pronto." | "May close soon." |
+| `closingLaterTodayDescription` | "Posible cierre más tarde hoy." | "May close later today." |
 
 The verify link points to `https://x.com/MADRID`. The prompt is styled as a
 prominent clickable box with an alert icon, not a subtle text link.
@@ -618,7 +616,7 @@ same user-facing advisory copy regardless of severity level.
 | `src/hooks/useWeatherWarnings.ts` | Create | Client hook returning full warning signal |
 | `src/components/StatusCard.tsx`   | Modify | Render predictive advisory banners        |
 | `src/utils/closureAdvisory.ts`    | Create | Conservative decision helper for advisory state |
-| `src/utils/primaryStatus.ts`      | Create | Primary status override resolver          |
+| `src/utils/primaryStatus.ts`      | Create | Main-status resolver (official status passthrough) |
 | `src/i18n.ts`                     | Modify | Add predictive advisory translation keys  |
 | `src/types.ts`                    | Modify | Add `WeatherWarningSignal` type           |
 
@@ -630,7 +628,10 @@ The `/api/aemet-warnings` endpoint:
 2. Fetches the `datos` URL from response to get warning data
 3. Filters warnings for zone `722802` and types `VI` (wind) or `NE` (snow)
 4. Computes active + upcoming windows (now, within 2h, later today)
-5. Returns:
+5. Client-side advisory helper classifies upcoming warnings:
+   - `warning_soon` when onset is within ≤2h
+   - `closing_later_today` when onset is later on the same Madrid date
+6. Returns:
 
 ```json
 {
@@ -644,8 +645,8 @@ The `/api/aemet-warnings` endpoint:
 }
 ```
 
-6. On error, returns fail-open empty signal (all flags false)
-7. Supports mock scenarios via `warningScenario=none|active|soon|later`,
+7. On error, returns fail-open empty signal (all flags false)
+8. Supports mock scenarios via `warningScenario=none|active|soon|later`,
    plus legacy `warning=true|false` compatibility in mock mode.
 
 #### Client Hook Behavior

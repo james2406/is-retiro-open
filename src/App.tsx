@@ -4,11 +4,10 @@ import { useRetiroStatus } from "./hooks/useRetiroStatus";
 import { useWeatherWarnings } from "./hooks/useWeatherWarnings";
 import { StatusCard } from "./components/StatusCard";
 import { Footer } from "./components/Footer";
-import { STATUS_THEMES, ERROR_THEME, CLOSING_THEME } from "./types";
+import { STATUS_THEMES, ERROR_THEME } from "./types";
 import { detectLocale, getTranslations } from "./i18n";
 import type { StatusCode, RetiroStatus } from "./types";
 import type { Locale } from "./i18n";
-import { resolveClosureAdvisory } from "./utils/closureAdvisory";
 import { resolvePrimaryStatus } from "./utils/primaryStatus";
 
 interface AppProps {
@@ -32,8 +31,7 @@ function App({ initialData = null, initialLocale }: AppProps) {
   }, [initialLocale]);
 
   const t = getTranslations(locale);
-  const advisory = resolveClosureAdvisory(data?.code, weatherWarnings);
-  const primaryStatus = resolvePrimaryStatus(data?.code, advisory.state);
+  const primaryStatus = resolvePrimaryStatus(data?.code);
 
   // Determine current theme for consistent styling
   let theme;
@@ -45,10 +43,7 @@ function App({ initialData = null, initialLocale }: AppProps) {
     theme = ERROR_THEME;
   } else {
     // We have data (either initial or fetched), so use primary status resolution.
-    theme =
-      primaryStatus.mode === "closing"
-        ? CLOSING_THEME
-        : STATUS_THEMES[primaryStatus.themeCode as StatusCode] || STATUS_THEMES[1];
+    theme = STATUS_THEMES[primaryStatus.themeCode as StatusCode] || STATUS_THEMES[1];
   }
 
   // Update theme-color meta tag for mobile browsers

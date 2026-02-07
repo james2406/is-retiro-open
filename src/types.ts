@@ -39,12 +39,6 @@ export const STATUS_THEMES: Record<StatusCode, StatusTheme> = {
   6: { bgColor: "#C0392B", textColor: "#FFFFFF" },
 };
 
-// Distinct from CLOSED red, used for predictive near-term closing state.
-export const CLOSING_THEME: StatusTheme = {
-  bgColor: "#E74C3C",
-  textColor: "#FFFFFF",
-};
-
 export const ERROR_THEME: StatusTheme = {
   bgColor: "#7F8C8D",
   textColor: "#FFFFFF",
