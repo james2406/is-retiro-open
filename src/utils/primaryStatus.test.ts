@@ -8,16 +8,16 @@ test("official closed always wins", () => {
   assert.equal(result.themeCode, 6);
 });
 
-test("active warning upgrades to predicted_closed", () => {
+test("active warning keeps official status", () => {
   const result = resolvePrimaryStatus(1, "likely_closed_now");
-  assert.equal(result.mode, "predicted_closed");
-  assert.equal(result.themeCode, 6);
+  assert.equal(result.mode, "official");
+  assert.equal(result.themeCode, 1);
 });
 
-test("soon warning upgrades to closing", () => {
-  const result = resolvePrimaryStatus(1, "closing_soon");
-  assert.equal(result.mode, "closing");
-  assert.equal(result.themeCode, 4);
+test("soon warning keeps official status", () => {
+  const result = resolvePrimaryStatus(1, "warning_soon");
+  assert.equal(result.mode, "official");
+  assert.equal(result.themeCode, 1);
 });
 
 test("later today keeps official status", () => {

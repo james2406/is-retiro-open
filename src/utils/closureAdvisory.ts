@@ -3,7 +3,7 @@ import type { StatusCode, WeatherWarningSignal } from "../types";
 export type ClosureAdvisoryState =
   | "none"
   | "likely_closed_now"
-  | "closing_soon"
+  | "warning_soon"
   | "closing_later_today";
 
 export interface ClosureAdvisory {
@@ -15,6 +15,7 @@ export interface ClosureAdvisory {
  * Conservative decision model:
  * - Keep official park status as the primary source of truth for open/closed text.
  * - Add predictive closure advisories from AEMET when status is still open/restricted.
+ * - Upcoming warnings (within 2h and later today) are advisory-only.
  */
 export function resolveClosureAdvisory(
   code: StatusCode | null | undefined,
@@ -38,7 +39,7 @@ export function resolveClosureAdvisory(
 
   if (weather.hasWarningWithin2Hours) {
     return {
-      state: "closing_soon",
+      state: "warning_soon",
       nextWarningOnset: weather.nextWarningOnset,
     };
   }

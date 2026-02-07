@@ -5,13 +5,11 @@ export interface Translations {
   loading: string;
   lastSourceUpdate: string;
   likelyClosedNowAlert: string;
-  closingSoonAlert: string;
+  likelyClosedNowDescription: string;
+  warningSoonAlert: string;
   closingLaterTodayAlert: string;
+  warningSoonDescription: string;
   closingLaterTodayDescription: string;
-  predictedClosedBig: string;
-  predictedClosedDescription: string;
-  closingBig: string;
-  closingDescription: string;
   adjustedStatusNote: string;
   dataProvidedBy: string;
   license: string;
@@ -33,16 +31,14 @@ const translations: Record<Locale, Translations> = {
     headerTitle: "¿Está abierto el Retiro?",
     loading: "Cargando...",
     lastSourceUpdate: "Última actualización",
-    likelyClosedNowAlert: "Alerta meteorológica activa · Verifica en @MADRID →",
-    closingSoonAlert: "Alerta meteorológica · Verifica en @MADRID →",
-    closingLaterTodayAlert: "Alerta meteorológica · Verifica en @MADRID →",
+    likelyClosedNowAlert: "Alerta activa · Verifica en @MADRID →",
+    likelyClosedNowDescription: "Podría estar cerrado por alerta meteorológica activa.",
+    warningSoonAlert: "Aviso próximo · Verifica en @MADRID →",
+    closingLaterTodayAlert: "Aviso hoy · Verifica en @MADRID →",
+    warningSoonDescription: "Podría cerrar pronto.",
     closingLaterTodayDescription: "Posible cierre más tarde hoy.",
-    predictedClosedBig: "CERRADO",
-    predictedClosedDescription: "Cierre probable por alerta meteorológica activa.",
-    closingBig: "CIERRE INMINENTE",
-    closingDescription: "Posible cierre inminente por alerta meteorológica.",
     adjustedStatusNote:
-      "Estado principal ajustado por una alerta meteorológica activa de AEMET; el parte oficial del parque puede retrasarse.",
+      "El parte oficial del parque puede retrasarse durante alertas activas de AEMET.",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
     checkOfficialSite: "Ver web oficial",
@@ -69,16 +65,14 @@ const translations: Record<Locale, Translations> = {
     headerTitle: "Is Retiro Open?",
     loading: "Loading...",
     lastSourceUpdate: "Last update",
-    likelyClosedNowAlert: "Active weather warning · Verify on @MADRID →",
-    closingSoonAlert: "Weather warning · Verify on @MADRID →",
-    closingLaterTodayAlert: "Weather warning · Verify on @MADRID →",
+    likelyClosedNowAlert: "Active warning · Verify on @MADRID →",
+    likelyClosedNowDescription: "It may already be closed due to an active weather warning.",
+    warningSoonAlert: "Warning soon · Verify on @MADRID →",
+    closingLaterTodayAlert: "Warning today · Verify on @MADRID →",
+    warningSoonDescription: "May close soon.",
     closingLaterTodayDescription: "May close later today.",
-    predictedClosedBig: "CLOSED",
-    predictedClosedDescription: "Likely closure due to an active weather warning.",
-    closingBig: "CLOSING",
-    closingDescription: "Likely to close soon due to a weather warning.",
     adjustedStatusNote:
-      "Main status adjusted due to an active AEMET warning; official park feed may lag.",
+      "Official park status may lag while an AEMET warning is active.",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",
