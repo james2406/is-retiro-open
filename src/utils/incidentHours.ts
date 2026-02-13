@@ -7,7 +7,8 @@ const BARE_TIME_RANGE_REGEX = new RegExp(`^(${TIME_TOKEN_REGEX})\\s+(${TIME_TOKE
  */
 export function formatIncidentHours(value: string): string {
   const normalized = value.trim().replace(/\s+/g, " ");
-  const standardized = normalized
+  const withoutPrefix = normalized.replace(/^de\s+/i, "");
+  const standardized = withoutPrefix
     .replace(/\s+(?:a|to)\s+/gi, " - ")
     .replace(/\s*[–—-]\s*/g, " - ");
 
