@@ -61,6 +61,11 @@ const OG_SITE_NAMES: Record<Locale, string> = {
   en: "Is Retiro Open?",
 };
 
+const APP_TITLES: Record<Locale, string> = {
+  es: "¿Retiro Abierto?",
+  en: "Is Retiro Open?",
+};
+
 const OG_LOCALES: Record<Locale, string> = { es: "es_ES", en: "en_GB" };
 
 const PLACE_NAMES: Record<Locale, string> = {
@@ -110,7 +115,31 @@ async function prerender() {
   // Use file URL for cross-platform compatibility (Windows)
   const { render } = await import(pathToFileURL(serverEntryPath).href);
 
-  // 3. Render for each locale
+  // 3. Generate locale-specific web manifests
+  const manifestTemplatePath = toAbsolute("dist/manifest.webmanifest");
+  if (!fs.existsSync(manifestTemplatePath)) {
+    console.error("CRITICAL: dist/manifest.webmanifest not found. Did the client build fail?");
+    process.exit(1);
+  }
+  const manifestTemplate = fs.readFileSync(manifestTemplatePath, "utf-8");
+
+  for (const locale of LOCALES) {
+    const startUrl = locale === "es" ? "/" : `/${locale}`;
+    const manifest = manifestTemplate
+      .replaceAll("__APP_TITLE__", APP_TITLES[locale])
+      .replace('"start_url": "/"', `"start_url": "${startUrl}"`);
+    const manifestPath = locale === "es"
+      ? toAbsolute("dist/manifest.webmanifest")
+      : toAbsolute(`dist/${locale}/manifest.webmanifest`);
+    const manifestDir = path.dirname(manifestPath);
+    if (!fs.existsSync(manifestDir)) {
+      fs.mkdirSync(manifestDir, { recursive: true });
+    }
+    fs.writeFileSync(manifestPath, manifest);
+    console.log(`Generated manifest: ${manifestPath}`);
+  }
+
+  // 4. Render for each locale
   for (const locale of LOCALES) {
     console.log(`Rendering for locale: ${locale}`);
 
@@ -159,7 +188,9 @@ async function prerender() {
     });
 
     html = html
+      .replaceAll("__MANIFEST_URL__", locale === "es" ? "/manifest.webmanifest" : `/${locale}/manifest.webmanifest`)
       .replaceAll("__META_DESCRIPTION__", META_DESCRIPTIONS[locale])
+      .replaceAll("__APP_TITLE__", APP_TITLES[locale])
       .replaceAll("__PAGE_TITLE__", PAGE_TITLES[locale])
       .replaceAll("__CANONICAL_URL__", canonicalUrl)
       .replaceAll("__ALT_ES__", SITE_URL)
