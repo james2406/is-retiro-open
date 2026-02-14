@@ -117,23 +117,26 @@ async function prerender() {
 
   // 3. Generate locale-specific web manifests
   const manifestTemplatePath = toAbsolute("dist/manifest.webmanifest");
-  const manifestTemplate = fs.existsSync(manifestTemplatePath)
-    ? fs.readFileSync(manifestTemplatePath, "utf-8")
-    : null;
+  if (!fs.existsSync(manifestTemplatePath)) {
+    console.error("CRITICAL: dist/manifest.webmanifest not found. Did the client build fail?");
+    process.exit(1);
+  }
+  const manifestTemplate = fs.readFileSync(manifestTemplatePath, "utf-8");
 
-  if (manifestTemplate) {
-    for (const locale of LOCALES) {
-      const manifest = manifestTemplate.replaceAll("__APP_TITLE__", APP_TITLES[locale]);
-      const manifestPath = locale === "es"
-        ? toAbsolute("dist/manifest.webmanifest")
-        : toAbsolute(`dist/${locale}/manifest.webmanifest`);
-      const manifestDir = path.dirname(manifestPath);
-      if (!fs.existsSync(manifestDir)) {
-        fs.mkdirSync(manifestDir, { recursive: true });
-      }
-      fs.writeFileSync(manifestPath, manifest);
-      console.log(`Generated manifest: ${manifestPath}`);
+  for (const locale of LOCALES) {
+    const startUrl = locale === "es" ? "/" : `/${locale}`;
+    const manifest = manifestTemplate
+      .replaceAll("__APP_TITLE__", APP_TITLES[locale])
+      .replace('"start_url": "/"', `"start_url": "${startUrl}"`);
+    const manifestPath = locale === "es"
+      ? toAbsolute("dist/manifest.webmanifest")
+      : toAbsolute(`dist/${locale}/manifest.webmanifest`);
+    const manifestDir = path.dirname(manifestPath);
+    if (!fs.existsSync(manifestDir)) {
+      fs.mkdirSync(manifestDir, { recursive: true });
     }
+    fs.writeFileSync(manifestPath, manifest);
+    console.log(`Generated manifest: ${manifestPath}`);
   }
 
   // 4. Render for each locale
