@@ -31,14 +31,17 @@ const translations: Record<Locale, Translations> = {
     headerTitle: "¿Está abierto el Retiro?",
     loading: "Cargando...",
     lastSourceUpdate: "Última actualización",
-    likelyClosedNowAlert: "Alerta activa · Verifica en @MADRID →",
-    likelyClosedNowDescription: "Podría estar cerrado por alerta meteorológica activa.",
-    warningSoonAlert: "Aviso próximo · Verifica en @MADRID →",
-    closingLaterTodayAlert: "Aviso hoy · Verifica en @MADRID →",
-    warningSoonDescription: "Podría cerrar pronto.",
-    closingLaterTodayDescription: "Posible cierre más tarde hoy.",
+    likelyClosedNowAlert: "Verifica el estado actual en @MADRID →",
+    likelyClosedNowDescription:
+      "Abierto ahora, pero una alerta meteorológica activa podría cerrar el parque.",
+    warningSoonAlert: "Verifica el estado actual en @MADRID →",
+    closingLaterTodayAlert: "Verifica el estado actual en @MADRID →",
+    warningSoonDescription:
+      "Abierto ahora, pero podría cerrar pronto por alerta meteorológica.",
+    closingLaterTodayDescription:
+      "Abierto ahora, pero podría cerrar más tarde hoy por alerta meteorológica.",
     adjustedStatusNote:
-      "El parte oficial del parque puede retrasarse durante alertas activas de AEMET.",
+      "Las actualizaciones oficiales pueden retrasarse durante alertas activas.",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
     checkOfficialSite: "Ver web oficial",
@@ -65,14 +68,16 @@ const translations: Record<Locale, Translations> = {
     headerTitle: "Is Retiro Open?",
     loading: "Loading...",
     lastSourceUpdate: "Last update",
-    likelyClosedNowAlert: "Active warning · Verify on @MADRID →",
-    likelyClosedNowDescription: "It may already be closed due to an active weather warning.",
-    warningSoonAlert: "Warning soon · Verify on @MADRID →",
-    closingLaterTodayAlert: "Warning today · Verify on @MADRID →",
-    warningSoonDescription: "May close soon.",
-    closingLaterTodayDescription: "May close later today.",
+    likelyClosedNowAlert: "Verify current status on @MADRID →",
+    likelyClosedNowDescription:
+      "Open now, but an active weather warning could trigger closure.",
+    warningSoonAlert: "Verify current status on @MADRID →",
+    closingLaterTodayAlert: "Verify current status on @MADRID →",
+    warningSoonDescription: "Open now, but a weather warning is expected soon.",
+    closingLaterTodayDescription:
+      "Open now, but a weather warning is expected later today.",
     adjustedStatusNote:
-      "Official park status may lag while an AEMET warning is active.",
+      "Official updates may lag during active warnings.",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",

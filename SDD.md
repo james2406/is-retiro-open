@@ -585,12 +585,12 @@ In these states, the subtitle switches to an advisory description
 
 | Key                     | Spanish                                                              | English                                              |
 | ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------- |
-| `likelyClosedNowAlert`  | "Alerta activa · Verifica en @MADRID →" | "Active warning · Verify on @MADRID →" |
-| `likelyClosedNowDescription` | "Podría estar cerrado por alerta meteorológica activa." | "It may already be closed due to an active weather warning." |
-| `warningSoonAlert`      | "Aviso próximo · Verifica en @MADRID →" | "Warning soon · Verify on @MADRID →" |
-| `closingLaterTodayAlert` | "Aviso hoy · Verifica en @MADRID →" | "Warning today · Verify on @MADRID →" |
-| `warningSoonDescription` | "Podría cerrar pronto." | "May close soon." |
-| `closingLaterTodayDescription` | "Posible cierre más tarde hoy." | "May close later today." |
+| `likelyClosedNowAlert`  | "Verifica el estado actual en @MADRID →" | "Verify current status on @MADRID →" |
+| `likelyClosedNowDescription` | "Abierto ahora, pero una alerta meteorológica activa podría cerrar el parque." | "Open now, but an active weather warning could trigger closure." |
+| `warningSoonAlert`      | "Verifica el estado actual en @MADRID →" | "Verify current status on @MADRID →" |
+| `closingLaterTodayAlert` | "Verifica el estado actual en @MADRID →" | "Verify current status on @MADRID →" |
+| `warningSoonDescription` | "Abierto ahora, pero podría cerrar pronto por alerta meteorológica." | "Open now, but a weather warning is expected soon." |
+| `closingLaterTodayDescription` | "Abierto ahora, pero podría cerrar más tarde hoy por alerta meteorológica." | "Open now, but a weather warning is expected later today." |
 
 The verify link points to `https://x.com/MADRID`. The prompt is styled as a
 prominent clickable box with an alert icon, not a subtle text link.
