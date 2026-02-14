@@ -61,6 +61,11 @@ const OG_SITE_NAMES: Record<Locale, string> = {
   en: "Is Retiro Open?",
 };
 
+const APP_TITLES: Record<Locale, string> = {
+  es: "¿Retiro Abierto?",
+  en: "Is Retiro Open?",
+};
+
 const OG_LOCALES: Record<Locale, string> = { es: "es_ES", en: "en_GB" };
 
 const PLACE_NAMES: Record<Locale, string> = {
@@ -160,6 +165,7 @@ async function prerender() {
 
     html = html
       .replaceAll("__META_DESCRIPTION__", META_DESCRIPTIONS[locale])
+      .replaceAll("__APP_TITLE__", APP_TITLES[locale])
       .replaceAll("__PAGE_TITLE__", PAGE_TITLES[locale])
       .replaceAll("__CANONICAL_URL__", canonicalUrl)
       .replaceAll("__ALT_ES__", SITE_URL)
