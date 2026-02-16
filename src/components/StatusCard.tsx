@@ -48,34 +48,37 @@ function parseSourceDate(dateStr: string): Date | null {
 }
 
 /**
- * Checks if the source date is stale (yesterday or older) compared to today in Madrid timezone.
+ * Returns the number of days between the source date and today in Madrid timezone.
+ * Returns null if the date is invalid.
  */
-function isSourceDateStale(dateStr: string | null): boolean {
-  if (!dateStr) return false;
-  
+function getSourceDaysAgo(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+
   const sourceDate = parseSourceDate(dateStr);
-  if (!sourceDate) return false;
-  
+  if (!sourceDate) return null;
+
   // Get today's date in Madrid timezone
   const madridNow = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
   const [year, month, day] = madridNow.split("-").map(Number);
   const todayMadrid = new Date(year, month - 1, day);
-  
-  // Compare dates (source is stale if it's before today)
-  return sourceDate < todayMadrid;
+
+  const diffMs = todayMadrid.getTime() - sourceDate.getTime();
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
 /**
- * Formats the source date (DD/MM/YYYY) for display.
+ * Formats the source date as a relative string: "today", "yesterday", "N days ago".
  */
-function formatSourceDate(dateStr: string, locale: string): string {
-  const sourceDate = parseSourceDate(dateStr);
-  if (!sourceDate) return dateStr;
-  
-  return sourceDate.toLocaleDateString(locale === "es" ? "es-ES" : "en-GB", {
-    day: "numeric",
-    month: "short",
-  });
+function formatRelativeDate(
+  dateStr: string | null,
+  t: { relativeToday: string; relativeYesterday: string; relativeDaysAgo: (days: number) => string }
+): string | null {
+  const daysAgo = getSourceDaysAgo(dateStr);
+  if (daysAgo === null || daysAgo < 0) return null;
+
+  if (daysAgo === 0) return t.relativeToday;
+  if (daysAgo === 1) return t.relativeYesterday;
+  return t.relativeDaysAgo(daysAgo);
 }
 
 export function StatusCard({
@@ -238,17 +241,13 @@ export function StatusCard({
             </p>
           )}
 
-          {/* Stale data warning - only show when data is old */}
-          {data && isSourceDateStale(data.source_updated_at) && (
+          {/* Source update timestamp */}
+          {data && formatRelativeDate(data.source_updated_at, t) && (
             <p
               className="mt-4 text-sm opacity-80"
               style={{ color: theme.textColor }}
             >
-              {t.lastSourceUpdate}:{" "}
-              {data.source_updated_at && formatSourceDate(
-                data.source_updated_at,
-                t.headerTitle.startsWith("¿") ? "es" : "en"
-              )}
+              {t.lastSourceUpdate}: {formatRelativeDate(data.source_updated_at, t)}
             </p>
           )}
         </div>
