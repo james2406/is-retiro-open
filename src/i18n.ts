@@ -3,10 +3,7 @@ export type Locale = "es" | "en";
 export interface Translations {
   headerTitle: string;
   loading: string;
-  lastSourceUpdate: string;
-  relativeToday: string;
-  relativeYesterday: string;
-  relativeDaysAgo: (days: number) => string;
+  lastUpdatedAt: string;
   likelyClosedNowAlert: string;
   likelyClosedNowDescription: string;
   warningSoonAlert: string;
@@ -33,10 +30,7 @@ const translations: Record<Locale, Translations> = {
   es: {
     headerTitle: "¿Está abierto el Retiro?",
     loading: "Cargando...",
-    lastSourceUpdate: "Última actualización",
-    relativeToday: "hoy",
-    relativeYesterday: "ayer",
-    relativeDaysAgo: (days: number) => `hace ${days} días`,
+    lastUpdatedAt: "Última actualización",
     likelyClosedNowAlert: "Alerta activa · Verifica en @MADRID →",
     likelyClosedNowDescription: "Podría estar cerrado por alerta meteorológica activa.",
     warningSoonAlert: "Aviso próximo · Verifica en @MADRID →",
@@ -70,10 +64,7 @@ const translations: Record<Locale, Translations> = {
   en: {
     headerTitle: "Is Retiro Open?",
     loading: "Loading...",
-    lastSourceUpdate: "Last update",
-    relativeToday: "today",
-    relativeYesterday: "yesterday",
-    relativeDaysAgo: (days: number) => `${days} days ago`,
+    lastUpdatedAt: "Last update",
     likelyClosedNowAlert: "Active warning · Verify on @MADRID →",
     likelyClosedNowDescription: "It may already be closed due to an active weather warning.",
     warningSoonAlert: "Warning soon · Verify on @MADRID →",

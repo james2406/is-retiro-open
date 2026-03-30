@@ -6,5 +6,6 @@ declare global {
   interface Window {
     __INITIAL_DATA__?: RetiroStatus;
     __INITIAL_LOCALE__?: Locale;
+    __BUILT_AT__?: string;
   }
 }

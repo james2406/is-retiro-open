@@ -7,8 +7,98 @@ on:
   workflow_dispatch:
 
 jobs:
-  rebuild:
+  check-and-rebuild:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Vercel Deploy
-        run: curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+      - name: Fetch current status from Madrid API
+        id: current
+        run: |
+          RESPONSE=$(curl -fsS --max-time 10 \
+            "https://sigma.madrid.es/hosted/rest/services/MEDIO_AMBIENTE/ALERTAS_PARQUES/MapServer/0/query?where=1%3D1&outFields=ZONA_VERDE,ALERTA_DESCRIPCION,HORARIO_INCIDENCIA,OBSERVACIONES&f=json")
+
+          # Extract the Retiro feature and its alert code
+          CURRENT_CODE=$(echo "$RESPONSE" | jq -r '
+            .features[]
+            | select(.attributes.ZONA_VERDE | ascii_downcase | contains("retiro"))
+            | .attributes.ALERTA_DESCRIPCION // 1
+          ')
+
+          CURRENT_INCIDENTS=$(echo "$RESPONSE" | jq -r '
+            .features[]
+            | select(.attributes.ZONA_VERDE | ascii_downcase | contains("retiro"))
+            | .attributes.HORARIO_INCIDENCIA // ""
+          ')
+
+          CURRENT_OBSERVATIONS=$(echo "$RESPONSE" | jq -r '
+            .features[]
+            | select(.attributes.ZONA_VERDE | ascii_downcase | contains("retiro"))
+            | .attributes.OBSERVACIONES // ""
+          ')
+
+          if [ -z "$CURRENT_CODE" ]; then
+            echo "::error::Could not extract Retiro status from Madrid API"
+            exit 1
+          fi
+
+          echo "code=$CURRENT_CODE" >> "$GITHUB_OUTPUT"
+          echo "incidents=$CURRENT_INCIDENTS" >> "$GITHUB_OUTPUT"
+          echo "observations=$CURRENT_OBSERVATIONS" >> "$GITHUB_OUTPUT"
+          echo "Current status: code=$CURRENT_CODE"
+
+      - name: Fetch last known status from deployed site
+        id: deployed
+        run: |
+          HTTP_CODE=$(curl -sS -o /tmp/status.json -w "%{http_code}" --max-time 10 \
+            "https://www.estaabiertoelretiro.com/status.json" || true)
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "status.json not found or unreachable (HTTP $HTTP_CODE) — will rebuild"
+            echo "code=" >> "$GITHUB_OUTPUT"
+          else
+            DEPLOYED_CODE=$(jq -r '.code // ""' /tmp/status.json)
+            DEPLOYED_INCIDENTS=$(jq -r '.incidents // ""' /tmp/status.json)
+            DEPLOYED_OBSERVATIONS=$(jq -r '.observations // ""' /tmp/status.json)
+            echo "code=$DEPLOYED_CODE" >> "$GITHUB_OUTPUT"
+            echo "incidents=$DEPLOYED_INCIDENTS" >> "$GITHUB_OUTPUT"
+            echo "observations=$DEPLOYED_OBSERVATIONS" >> "$GITHUB_OUTPUT"
+            echo "Deployed status: code=$DEPLOYED_CODE"
+          fi
+
+      - name: Compare and trigger rebuild if changed
+        run: |
+          CURRENT_CODE="${{ steps.current.outputs.code }}"
+          DEPLOYED_CODE="${{ steps.deployed.outputs.code }}"
+          CURRENT_INCIDENTS="${{ steps.current.outputs.incidents }}"
+          DEPLOYED_INCIDENTS="${{ steps.deployed.outputs.incidents }}"
+          CURRENT_OBSERVATIONS="${{ steps.current.outputs.observations }}"
+          DEPLOYED_OBSERVATIONS="${{ steps.deployed.outputs.observations }}"
+          IS_MANUAL="${{ github.event_name == 'workflow_dispatch' }}"
+
+          CHANGED=false
+
+          if [ -z "$DEPLOYED_CODE" ]; then
+            echo "No deployed status found — triggering rebuild"
+            CHANGED=true
+          elif [ "$CURRENT_CODE" != "$DEPLOYED_CODE" ]; then
+            echo "Status code changed: $DEPLOYED_CODE → $CURRENT_CODE"
+            CHANGED=true
+          elif [ "$CURRENT_INCIDENTS" != "$DEPLOYED_INCIDENTS" ]; then
+            echo "Incidents changed"
+            CHANGED=true
+          elif [ "$CURRENT_OBSERVATIONS" != "$DEPLOYED_OBSERVATIONS" ]; then
+            echo "Observations changed"
+            CHANGED=true
+          fi
+
+          if [ "$IS_MANUAL" = "true" ]; then
+            echo "Manual trigger — forcing rebuild"
+            CHANGED=true
+          fi
+
+          if [ "$CHANGED" = "true" ]; then
+            echo "Triggering Vercel deploy..."
+            curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+            echo "Deploy triggered successfully"
+          else
+            echo "No change detected (code=$CURRENT_CODE) — skipping rebuild"
+          fi

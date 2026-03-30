@@ -83,6 +83,7 @@ function App({ initialData = null, initialLocale }: AppProps) {
           error={error}
           isOffline={isOffline}
           weatherWarnings={weatherWarnings}
+          builtAt={typeof window !== "undefined" ? window.__BUILT_AT__ : undefined}
           t={t}
         />
 
