@@ -43,3 +43,8 @@ export const ERROR_THEME: StatusTheme = {
   bgColor: "#7F8C8D",
   textColor: "#FFFFFF",
 };
+
+export const NIGHT_THEME: StatusTheme = {
+  bgColor: "#1B2A4A",
+  textColor: "#FFFFFF",
+};
