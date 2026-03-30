@@ -81,15 +81,15 @@ jobs:
           fi
 
       - name: Compare and trigger rebuild if changed
+        env:
+          CURRENT_CODE: ${{ steps.current.outputs.code }}
+          DEPLOYED_CODE: ${{ steps.deployed.outputs.code }}
+          CURRENT_INCIDENTS: ${{ steps.current.outputs.incidents }}
+          DEPLOYED_INCIDENTS: ${{ steps.deployed.outputs.incidents }}
+          CURRENT_OBSERVATIONS: ${{ steps.current.outputs.observations }}
+          DEPLOYED_OBSERVATIONS: ${{ steps.deployed.outputs.observations }}
+          IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
-          CURRENT_CODE="${{ steps.current.outputs.code }}"
-          DEPLOYED_CODE="${{ steps.deployed.outputs.code }}"
-          CURRENT_INCIDENTS="${{ steps.current.outputs.incidents }}"
-          DEPLOYED_INCIDENTS="${{ steps.deployed.outputs.incidents }}"
-          CURRENT_OBSERVATIONS="${{ steps.current.outputs.observations }}"
-          DEPLOYED_OBSERVATIONS="${{ steps.deployed.outputs.observations }}"
-          IS_MANUAL="${{ github.event_name == 'workflow_dispatch' }}"
-
           CHANGED=false
 
           if [ -z "$DEPLOYED_CODE" ]; then
@@ -113,7 +113,8 @@ jobs:
 
           if [ "$CHANGED" = "true" ]; then
             echo "Triggering Vercel deploy..."
-            curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
+            curl -fsS --max-time 15 --retry 3 --retry-delay 2 --retry-all-errors \
+              -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_URL }}"
             echo "Deploy triggered successfully"
           else
             echo "No change detected (code=$CURRENT_CODE) — skipping rebuild"
