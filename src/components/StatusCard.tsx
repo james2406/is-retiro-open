@@ -67,16 +67,28 @@ function getSourceDaysAgo(dateStr: string | null): number | null {
 }
 
 /**
- * Formats the source date as a relative string: "today", "yesterday", "N days ago".
+ * Formats the source date as a relative string: "HH:MM" (when today), "yesterday", "N days ago".
+ * When the source date is today, the time from updatedAt is shown in Madrid timezone.
  */
 function formatRelativeDate(
   dateStr: string | null,
+  updatedAt: string | null,
   t: { relativeToday: string; relativeYesterday: string; relativeDaysAgo: (days: number) => string }
 ): string | null {
   const daysAgo = getSourceDaysAgo(dateStr);
   if (daysAgo === null || daysAgo < 0) return null;
 
-  if (daysAgo === 0) return t.relativeToday;
+  if (daysAgo === 0) {
+    if (updatedAt) {
+      return new Date(updatedAt).toLocaleTimeString("es-ES", {
+        timeZone: "Europe/Madrid",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+    }
+    return t.relativeToday;
+  }
   if (daysAgo === 1) return t.relativeYesterday;
   return t.relativeDaysAgo(daysAgo);
 }
@@ -242,12 +254,12 @@ export function StatusCard({
           )}
 
           {/* Source update timestamp */}
-          {data && formatRelativeDate(data.source_updated_at, t) && (
+          {data && formatRelativeDate(data.source_updated_at, data.updated_at, t) && (
             <p
               className="mt-4 text-sm opacity-80"
               style={{ color: theme.textColor }}
             >
-              {t.lastSourceUpdate}: {formatRelativeDate(data.source_updated_at, t)}
+              {t.lastSourceUpdate}: {formatRelativeDate(data.source_updated_at, data.updated_at, t)}
             </p>
           )}
         </div>
