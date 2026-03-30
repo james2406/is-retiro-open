@@ -20,6 +20,7 @@ interface StatusCardProps {
   error: string | null;
   isOffline: boolean;
   weatherWarnings: WeatherWarningSignal;
+  lastChangedAt: string | null;
   t: Translations;
 }
 
@@ -40,33 +41,29 @@ function formatTimeInMadrid(isoString: string | undefined): string | null {
 }
 
 /**
- * Formats Madrid's source date (DD/MM/YYYY) as a relative string.
- * Today → "HH:MM" (from updated_at), Yesterday → "yesterday", Older → "N days ago".
+ * Formats an ISO timestamp as either HH:MM (if today in Madrid) or a relative
+ * string ("yesterday", "N days ago") if older.
  */
-function formatSourceDate(
-  ddmmyyyy: string | null,
+function formatLastChanged(
+  isoString: string | null,
   translations: { yesterday: string; daysAgo: string },
 ): string | null {
-  if (!ddmmyyyy) return null;
-  const parts = ddmmyyyy.split("/");
-  if (parts.length !== 3) return null;
+  if (!isoString) return null;
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return null;
 
-  const sourceDate = new Date(
-    parseInt(parts[2], 10),
-    parseInt(parts[1], 10) - 1,
-    parseInt(parts[0], 10),
-  );
-  if (isNaN(sourceDate.getTime())) return null;
-
-  // Compare in Madrid timezone
+  // Get today's date in Madrid timezone
   const now = new Date();
-  const madridToday = new Date(
-    now.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" }),
-  );
-  const diffMs = madridToday.getTime() - sourceDate.getTime();
+  const madridToday = now.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const changedDay = date.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+
+  if (changedDay === madridToday) {
+    return formatTimeInMadrid(isoString);
+  }
+
+  const diffMs = new Date(madridToday).getTime() - new Date(changedDay).getTime();
   const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return null; // today — caller will show time instead
   if (diffDays === 1) return translations.yesterday;
   if (diffDays > 1) return translations.daysAgo.replace("{n}", String(diffDays));
   return null;
@@ -78,6 +75,7 @@ export function StatusCard({
   error,
   isOffline,
   weatherWarnings,
+  lastChangedAt,
   t,
 }: StatusCardProps) {
   let theme: StatusTheme;
@@ -239,9 +237,7 @@ export function StatusCard({
               style={{ color: theme.textColor }}
             >
               {t.statusUpdated}:{" "}
-              {formatSourceDate(data.source_updated_at, t) ??
-                formatTimeInMadrid(data.updated_at) ??
-                "—"}
+              {formatLastChanged(lastChangedAt, t) ?? "—"}
               {" · "}
               {t.lastChecked}: {formatTimeInMadrid(data.updated_at) ?? "—"}
             </p>
