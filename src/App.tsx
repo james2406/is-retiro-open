@@ -4,11 +4,12 @@ import { useRetiroStatus } from "./hooks/useRetiroStatus";
 import { useWeatherWarnings } from "./hooks/useWeatherWarnings";
 import { StatusCard } from "./components/StatusCard";
 import { Footer } from "./components/Footer";
-import { STATUS_THEMES, ERROR_THEME } from "./types";
+import { STATUS_THEMES, ERROR_THEME, NIGHT_THEME } from "./types";
 import { detectLocale, getTranslations } from "./i18n";
 import type { StatusCode, RetiroStatus } from "./types";
 import type { Locale } from "./i18n";
 import { resolvePrimaryStatus } from "./utils/primaryStatus";
+import { resolveParkHours, type ParkHoursInfo } from "./utils/parkHours";
 
 interface AppProps {
   initialData?: RetiroStatus | null;
@@ -16,10 +17,20 @@ interface AppProps {
   builtAt?: string;
 }
 
+function useParkHours(): ParkHoursInfo {
+  const [info, setInfo] = useState(() => resolveParkHours());
+  useEffect(() => {
+    const id = setInterval(() => setInfo(resolveParkHours()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return info;
+}
+
 function App({ initialData = null, initialLocale, builtAt }: AppProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale || "es");
   const { data, loading, error, isOffline, lastChangedAt, lastCheckedAt } = useRetiroStatus(initialData, builtAt);
   const weatherWarnings = useWeatherWarnings();
+  const parkHours = useParkHours();
 
   useEffect(() => {
     // Only attempt detection if no initial locale was provided (e.g. CSR fallback)
@@ -45,6 +56,11 @@ function App({ initialData = null, initialLocale, builtAt }: AppProps) {
   } else {
     // We have data (either initial or fetched), so use primary status resolution.
     theme = STATUS_THEMES[primaryStatus.themeCode as StatusCode] || STATUS_THEMES[1];
+
+    // Nighttime override for codes 1-4 (park physically closed)
+    if (parkHours.state === "closed_for_night" && data.code <= 4) {
+      theme = NIGHT_THEME;
+    }
   }
 
   // Update theme-color meta tag for mobile browsers
@@ -84,6 +100,7 @@ function App({ initialData = null, initialLocale, builtAt }: AppProps) {
           error={error}
           isOffline={isOffline}
           weatherWarnings={weatherWarnings}
+          parkHours={parkHours}
           lastChangedAt={lastChangedAt}
           lastCheckedAt={lastCheckedAt}
           t={t}

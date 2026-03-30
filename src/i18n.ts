@@ -51,7 +51,7 @@ const translations: Record<Locale, Translations> = {
     closingLaterTodayDescription: "Posible cierre más tarde hoy.",
     adjustedStatusNote:
       "El parte oficial del parque puede retrasarse durante alertas activas de AEMET.",
-    parkHoursClosedForNight: "Cerrado por horario nocturno · Abre a las 6:00",
+    parkHoursClosedForNight: "Horario nocturno. Abre a las 6:00.",
     parkHoursClosingSoon: "Cierra a las {time}",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
@@ -92,7 +92,7 @@ const translations: Record<Locale, Translations> = {
     closingLaterTodayDescription: "May close later today.",
     adjustedStatusNote:
       "Official park status may lag while an AEMET warning is active.",
-    parkHoursClosedForNight: "Closed for the night · Opens at 6:00",
+    parkHoursClosedForNight: "Night hours. Opens at 6:00.",
     parkHoursClosingSoon: "Closes at {time}",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",

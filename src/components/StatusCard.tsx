@@ -13,7 +13,7 @@ import {
   type ClosureAdvisoryState,
 } from "../utils/closureAdvisory";
 import { formatIncidentHours } from "../utils/incidentHours";
-import { resolveParkHours, type ParkHoursInfo } from "../utils/parkHours";
+import type { ParkHoursInfo } from "../utils/parkHours";
 import { resolvePrimaryStatus } from "../utils/primaryStatus";
 
 interface StatusCardProps {
@@ -22,6 +22,7 @@ interface StatusCardProps {
   error: string | null;
   isOffline: boolean;
   weatherWarnings: WeatherWarningSignal;
+  parkHours: ParkHoursInfo;
   lastChangedAt: string | null;
   lastCheckedAt: number | null;
   t: Translations;
@@ -46,18 +47,6 @@ function useRelativeTime(
   if (diffSec < 60) return translations.justNow;
   const mins = Math.floor(diffSec / 60);
   return translations.minutesAgo.replace("{n}", String(mins));
-}
-
-/**
- * Ticks every 60s and returns the current park-hours state in Madrid.
- */
-function useParkHours(): ParkHoursInfo {
-  const [info, setInfo] = useState(() => resolveParkHours());
-  useEffect(() => {
-    const id = setInterval(() => setInfo(resolveParkHours()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-  return info;
 }
 
 /**
@@ -115,12 +104,12 @@ export function StatusCard({
   error,
   isOffline,
   weatherWarnings,
+  parkHours,
   lastChangedAt,
   lastCheckedAt,
   t,
 }: StatusCardProps) {
   const lastCheckedLabel = useRelativeTime(lastCheckedAt, t);
-  const parkHours = useParkHours();
   let theme: StatusTheme;
   let bigText: string;
   let description: string;
@@ -146,48 +135,56 @@ export function StatusCard({
       const primaryStatus = resolvePrimaryStatus(code);
       theme = STATUS_THEMES[primaryStatus.themeCode] || STATUS_THEMES[1];
 
-      bigText = t.status[code].big;
-      // Add an asterisk when code 1 has a warning advisory.
-      // Codes 2-4 already include asterisks in translations.
-      if (
-        (
-          advisoryState === "likely_closed_now" ||
-          advisoryState === "warning_soon" ||
-          advisoryState === "closing_later_today"
-        ) &&
-        code === 1
-      ) {
-        bigText = bigText + "*";
-      }
-
-      // Build description, integrating incident hours if present
-      if (data.incidents && data.code >= 5) {
-        // Treat both closing (5) and closed (6) as closed
-        const formattedIncidentHours = formatIncidentHours(data.incidents);
-        description = isSpanish
-          ? `Cerrado por alerta meteorológica (${formattedIncidentHours}).`
-          : `Closed due to weather warning (${formattedIncidentHours}).`;
+      // Nighttime override: codes 1-4 show as closed with navy theme
+      if (parkHours.state === "closed_for_night" && code <= 4) {
+        bigText = t.status[5].big; // "CERRADO" / "CLOSED"
+        description = t.parkHoursClosedForNight;
+        // Suppress weather advisories and observations — park is physically closed
+        advisoryState = "none";
       } else {
-        if (advisoryState === "likely_closed_now") {
-          description = t.likelyClosedNowDescription;
-        } else if (advisoryState === "warning_soon") {
-          description = t.warningSoonDescription;
-        } else if (advisoryState === "closing_later_today") {
-          description = t.closingLaterTodayDescription;
+        bigText = t.status[code].big;
+        // Add an asterisk when code 1 has a warning advisory.
+        // Codes 2-4 already include asterisks in translations.
+        if (
+          (
+            advisoryState === "likely_closed_now" ||
+            advisoryState === "warning_soon" ||
+            advisoryState === "closing_later_today"
+          ) &&
+          code === 1
+        ) {
+          bigText = bigText + "*";
+        }
+
+        // Build description, integrating incident hours if present
+        if (data.incidents && data.code >= 5) {
+          // Treat both closing (5) and closed (6) as closed
+          const formattedIncidentHours = formatIncidentHours(data.incidents);
+          description = isSpanish
+            ? `Cerrado por alerta meteorológica (${formattedIncidentHours}).`
+            : `Closed due to weather warning (${formattedIncidentHours}).`;
         } else {
-          description = t.status[code].description;
-          // Append today's hours to the code-1 description
-          if (code === 1) {
-            description = description.replace(
-              ".",
-              ` (6:00 – ${parkHours.closeTime}).`,
-            );
+          if (advisoryState === "likely_closed_now") {
+            description = t.likelyClosedNowDescription;
+          } else if (advisoryState === "warning_soon") {
+            description = t.warningSoonDescription;
+          } else if (advisoryState === "closing_later_today") {
+            description = t.closingLaterTodayDescription;
+          } else {
+            description = t.status[code].description;
+            // Append today's hours to the code-1 description
+            if (code === 1) {
+              description = description.replace(
+                ".",
+                ` (6:00 – ${parkHours.closeTime}).`,
+              );
+            }
           }
         }
-      }
 
-      // Madrid observations are published in Spanish; avoid mixed-language blocks in English UI.
-      showObservations = isSpanish && !!data.observations && data.code === 2;
+        // Madrid observations are published in Spanish; avoid mixed-language blocks in English UI.
+        showObservations = isSpanish && !!data.observations && data.code === 2;
+      }
     } else {
       // Fallback for safety (should be covered by loading/error blocks)
       theme = ERROR_THEME;
@@ -207,9 +204,7 @@ export function StatusCard({
   }
 
   let parkHoursPillText: string | null = null;
-  if (parkHours.state === "closed_for_night") {
-    parkHoursPillText = t.parkHoursClosedForNight;
-  } else if (parkHours.state === "closing_soon") {
+  if (parkHours.state === "closing_soon") {
     parkHoursPillText = t.parkHoursClosingSoon.replace("{time}", parkHours.closeTime);
   }
 
