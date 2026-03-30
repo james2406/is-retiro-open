@@ -18,10 +18,10 @@ const CLOSING_SOON_MINUTES = 60;
 function getMadridTime(now: Date): { hour: number; minute: number; month: number } {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Europe/Madrid",
-    hour: "numeric",
+    hour: "2-digit",
     minute: "numeric",
     month: "numeric",
-    hour12: false,
+    hourCycle: "h23",
   }).formatToParts(now);
 
   return {

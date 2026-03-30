@@ -43,6 +43,18 @@ test("summer evening, closing soon", () => {
   assert.equal(result.state, "closing_soon");
 });
 
+test("summer exactly at midnight (00:00), closed", () => {
+  // Jul 16, 00:00 Madrid = 22:00 UTC (Jul 15)
+  const result = resolveParkHours(new Date("2026-07-15T22:00:00Z"));
+  assert.equal(result.state, "closed_for_night");
+});
+
+test("summer 00:30, closed", () => {
+  // Jul 16, 00:30 Madrid = 22:30 UTC (Jul 15)
+  const result = resolveParkHours(new Date("2026-07-15T22:30:00Z"));
+  assert.equal(result.state, "closed_for_night");
+});
+
 test("summer post-midnight, closed", () => {
   // Jul 16, 01:00 Madrid = 23:00 UTC (Jul 15)
   const result = resolveParkHours(new Date("2026-07-15T23:00:00Z"));
