@@ -13,10 +13,9 @@ import { resolvePrimaryStatus } from "./utils/primaryStatus";
 interface AppProps {
   initialData?: RetiroStatus | null;
   initialLocale?: Locale;
-  builtAt?: string;
 }
 
-function App({ initialData = null, initialLocale, builtAt }: AppProps) {
+function App({ initialData = null, initialLocale }: AppProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale || "es");
   const { data, loading, error, isOffline } = useRetiroStatus(initialData);
   const weatherWarnings = useWeatherWarnings();
@@ -84,7 +83,6 @@ function App({ initialData = null, initialLocale, builtAt }: AppProps) {
           error={error}
           isOffline={isOffline}
           weatherWarnings={weatherWarnings}
-          builtAt={builtAt}
           t={t}
         />
 

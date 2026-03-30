@@ -35,6 +35,12 @@ jobs:
             | .attributes.OBSERVACIONES // ""
           ')
 
+          CURRENT_SOURCE_DATE=$(echo "$RESPONSE" | jq -r '
+            .features[]
+            | select(.attributes.ZONA_VERDE | ascii_downcase | contains("retiro"))
+            | .attributes.FECHA_INCIDENCIA // ""
+          ')
+
           if [ -z "$CURRENT_CODE" ]; then
             echo "::error::Could not extract Retiro status from Madrid API"
             exit 1
@@ -51,7 +57,8 @@ jobs:
             printf '%s\n' "$CURRENT_OBSERVATIONS"
             echo "__OBSERVATIONS_EOF__"
           } >> "$GITHUB_OUTPUT"
-          echo "Current status: code=$CURRENT_CODE"
+          echo "source_date=$CURRENT_SOURCE_DATE" >> "$GITHUB_OUTPUT"
+          echo "Current status: code=$CURRENT_CODE source_date=$CURRENT_SOURCE_DATE"
 
       - name: Fetch last known status from deployed site
         id: deployed
@@ -66,6 +73,7 @@ jobs:
             DEPLOYED_CODE=$(jq -r '.code // ""' /tmp/status.json)
             DEPLOYED_INCIDENTS=$(jq -r '.incidents // ""' /tmp/status.json)
             DEPLOYED_OBSERVATIONS=$(jq -r '.observations // ""' /tmp/status.json)
+            DEPLOYED_SOURCE_DATE=$(jq -r '.source_updated_at // ""' /tmp/status.json)
             echo "code=$DEPLOYED_CODE" >> "$GITHUB_OUTPUT"
             {
               echo "incidents<<__INCIDENTS_EOF__"
@@ -77,7 +85,8 @@ jobs:
               printf '%s\n' "$DEPLOYED_OBSERVATIONS"
               echo "__OBSERVATIONS_EOF__"
             } >> "$GITHUB_OUTPUT"
-            echo "Deployed status: code=$DEPLOYED_CODE"
+            echo "source_date=$DEPLOYED_SOURCE_DATE" >> "$GITHUB_OUTPUT"
+            echo "Deployed status: code=$DEPLOYED_CODE source_date=$DEPLOYED_SOURCE_DATE"
           fi
 
       - name: Compare and trigger rebuild if changed
@@ -88,6 +97,8 @@ jobs:
           DEPLOYED_INCIDENTS: ${{ steps.deployed.outputs.incidents }}
           CURRENT_OBSERVATIONS: ${{ steps.current.outputs.observations }}
           DEPLOYED_OBSERVATIONS: ${{ steps.deployed.outputs.observations }}
+          CURRENT_SOURCE_DATE: ${{ steps.current.outputs.source_date }}
+          DEPLOYED_SOURCE_DATE: ${{ steps.deployed.outputs.source_date }}
           IS_MANUAL: ${{ github.event_name == 'workflow_dispatch' }}
         run: |
           CHANGED=false
@@ -103,6 +114,9 @@ jobs:
             CHANGED=true
           elif [ "$CURRENT_OBSERVATIONS" != "$DEPLOYED_OBSERVATIONS" ]; then
             echo "Observations changed"
+            CHANGED=true
+          elif [ "$CURRENT_SOURCE_DATE" != "$DEPLOYED_SOURCE_DATE" ]; then
+            echo "Source date changed: $DEPLOYED_SOURCE_DATE → $CURRENT_SOURCE_DATE"
             CHANGED=true
           fi
 

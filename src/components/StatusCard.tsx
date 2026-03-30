@@ -20,15 +20,13 @@ interface StatusCardProps {
   error: string | null;
   isOffline: boolean;
   weatherWarnings: WeatherWarningSignal;
-  builtAt?: string;
   t: Translations;
 }
 
 /**
  * Formats an ISO timestamp as "HH:MM" in the Europe/Madrid timezone.
- * Returns null if the timestamp is invalid or missing.
  */
-function formatBuiltAtTime(isoString: string | undefined): string | null {
+function formatTimeInMadrid(isoString: string | undefined): string | null {
   if (!isoString) return null;
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return null;
@@ -41,13 +39,45 @@ function formatBuiltAtTime(isoString: string | undefined): string | null {
   });
 }
 
+/**
+ * Formats Madrid's source date (DD/MM/YYYY) as a relative string.
+ * Today → "HH:MM" (from updated_at), Yesterday → "yesterday", Older → "N days ago".
+ */
+function formatSourceDate(
+  ddmmyyyy: string | null,
+  translations: { yesterday: string; daysAgo: string },
+): string | null {
+  if (!ddmmyyyy) return null;
+  const parts = ddmmyyyy.split("/");
+  if (parts.length !== 3) return null;
+
+  const sourceDate = new Date(
+    parseInt(parts[2], 10),
+    parseInt(parts[1], 10) - 1,
+    parseInt(parts[0], 10),
+  );
+  if (isNaN(sourceDate.getTime())) return null;
+
+  // Compare in Madrid timezone
+  const now = new Date();
+  const madridToday = new Date(
+    now.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" }),
+  );
+  const diffMs = madridToday.getTime() - sourceDate.getTime();
+  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return null; // today — caller will show time instead
+  if (diffDays === 1) return translations.yesterday;
+  if (diffDays > 1) return translations.daysAgo.replace("{n}", String(diffDays));
+  return null;
+}
+
 export function StatusCard({
   data,
   loading,
   error,
   isOffline,
   weatherWarnings,
-  builtAt,
   t,
 }: StatusCardProps) {
   let theme: StatusTheme;
@@ -202,13 +232,18 @@ export function StatusCard({
             </p>
           )}
 
-          {/* Build timestamp */}
-          {data && formatBuiltAtTime(builtAt) && (
+          {/* Timestamps */}
+          {data && (
             <p
               className="mt-4 text-sm opacity-80"
               style={{ color: theme.textColor }}
             >
-              {t.lastUpdatedAt}: {formatBuiltAtTime(builtAt)}
+              {t.statusUpdated}:{" "}
+              {formatSourceDate(data.source_updated_at, t) ??
+                formatTimeInMadrid(data.updated_at) ??
+                "—"}
+              {" · "}
+              {t.lastChecked}: {formatTimeInMadrid(data.updated_at) ?? "—"}
             </p>
           )}
         </div>
