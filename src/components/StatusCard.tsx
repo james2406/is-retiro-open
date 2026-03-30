@@ -299,10 +299,9 @@ export function StatusCard({
               className="mt-4 text-sm opacity-80"
               style={{ color: theme.textColor }}
             >
-              {t.statusUpdated}:{" "}
-              {formatLastChanged(lastChangedAt, t) ?? "—"}
+              {t.statusUpdated} {formatLastChanged(lastChangedAt, t) ?? "—"}
               {lastCheckedLabel && (
-                <> · {t.lastChecked}: {lastCheckedLabel}</>
+                <> · {t.lastChecked} {lastCheckedLabel}</>
               )}
             </p>
           )}

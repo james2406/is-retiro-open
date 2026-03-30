@@ -37,8 +37,8 @@ const translations: Record<Locale, Translations> = {
   es: {
     headerTitle: "¿Está abierto el Retiro?",
     loading: "Cargando...",
-    statusUpdated: "Estado actualizado",
-    lastChecked: "Última comprobación",
+    statusUpdated: "Estado oficial a las",
+    lastChecked: "Comprobado",
     yesterday: "ayer",
     daysAgo: "hace {n} días",
     justNow: "ahora mismo",
@@ -78,8 +78,8 @@ const translations: Record<Locale, Translations> = {
   en: {
     headerTitle: "Is Retiro Open?",
     loading: "Loading...",
-    statusUpdated: "Status updated",
-    lastChecked: "Last checked",
+    statusUpdated: "Official status as of",
+    lastChecked: "Checked",
     yesterday: "yesterday",
     daysAgo: "{n} days ago",
     justNow: "just now",
