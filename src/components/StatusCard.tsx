@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Info, AlertTriangle } from "lucide-react";
+import { Info, AlertTriangle, Clock } from "lucide-react";
 import type {
   RetiroStatus,
   StatusCode,
@@ -13,6 +13,7 @@ import {
   type ClosureAdvisoryState,
 } from "../utils/closureAdvisory";
 import { formatIncidentHours } from "../utils/incidentHours";
+import { resolveParkHours, type ParkHoursInfo } from "../utils/parkHours";
 import { resolvePrimaryStatus } from "../utils/primaryStatus";
 
 interface StatusCardProps {
@@ -45,6 +46,18 @@ function useRelativeTime(
   if (diffSec < 60) return translations.justNow;
   const mins = Math.floor(diffSec / 60);
   return translations.minutesAgo.replace("{n}", String(mins));
+}
+
+/**
+ * Ticks every 60s and returns the current park-hours state in Madrid.
+ */
+function useParkHours(): ParkHoursInfo {
+  const [info, setInfo] = useState(() => resolveParkHours());
+  useEffect(() => {
+    const id = setInterval(() => setInfo(resolveParkHours()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return info;
 }
 
 /**
@@ -107,6 +120,7 @@ export function StatusCard({
   t,
 }: StatusCardProps) {
   const lastCheckedLabel = useRelativeTime(lastCheckedAt, t);
+  const parkHours = useParkHours();
   let theme: StatusTheme;
   let bigText: string;
   let description: string;
@@ -162,6 +176,13 @@ export function StatusCard({
           description = t.closingLaterTodayDescription;
         } else {
           description = t.status[code].description;
+          // Append today's hours to the code-1 description
+          if (code === 1) {
+            description = description.replace(
+              ".",
+              ` (6:00 – ${parkHours.closeTime}).`,
+            );
+          }
         }
       }
 
@@ -183,6 +204,13 @@ export function StatusCard({
     advisoryText = t.warningSoonAlert;
   } else if (advisoryState === "closing_later_today") {
     advisoryText = t.closingLaterTodayAlert;
+  }
+
+  let parkHoursPillText: string | null = null;
+  if (parkHours.state === "closed_for_night") {
+    parkHoursPillText = t.parkHoursClosedForNight;
+  } else if (parkHours.state === "closing_soon") {
+    parkHoursPillText = t.parkHoursClosingSoon.replace("{time}", parkHours.closeTime);
   }
 
   return (
@@ -250,6 +278,17 @@ export function StatusCard({
               <AlertTriangle className="w-6 h-6 shrink-0" />
               <span className="text-lg font-medium">{advisoryText}</span>
             </a>
+          )}
+
+          {/* Park hours pill - only when park is not already weather-closed (codes 1-4) */}
+          {data && parkHoursPillText && data.code >= 1 && data.code <= 4 && (
+            <div
+              className="mt-4 flex items-center gap-3 bg-black/20 rounded-xl px-5 py-4"
+              style={{ color: theme.textColor }}
+            >
+              <Clock className="w-6 h-6 shrink-0" />
+              <span className="text-lg font-medium">{parkHoursPillText}</span>
+            </div>
           )}
 
           {/* Context note when active warning may predate official park feed updates */}
