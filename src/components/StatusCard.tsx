@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Info, AlertTriangle } from "lucide-react";
 import type {
   RetiroStatus,
@@ -21,7 +22,29 @@ interface StatusCardProps {
   isOffline: boolean;
   weatherWarnings: WeatherWarningSignal;
   lastChangedAt: string | null;
+  lastCheckedAt: number | null;
   t: Translations;
+}
+
+/**
+ * Returns a relative time label that ticks every 15s.
+ */
+function useRelativeTime(
+  timestamp: number | null,
+  translations: { justNow: string; minutesAgo: string },
+): string | null {
+  const [now, setNow] = useState(Date.now);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (timestamp === null) return null;
+  const diffSec = Math.floor((now - timestamp) / 1000);
+  if (diffSec < 60) return translations.justNow;
+  const mins = Math.floor(diffSec / 60);
+  return translations.minutesAgo.replace("{n}", String(mins));
 }
 
 /**
@@ -80,8 +103,10 @@ export function StatusCard({
   isOffline,
   weatherWarnings,
   lastChangedAt,
+  lastCheckedAt,
   t,
 }: StatusCardProps) {
+  const lastCheckedLabel = useRelativeTime(lastCheckedAt, t);
   let theme: StatusTheme;
   let bigText: string;
   let description: string;
@@ -242,8 +267,9 @@ export function StatusCard({
             >
               {t.statusUpdated}:{" "}
               {formatLastChanged(lastChangedAt, t) ?? "—"}
-              {" · "}
-              {t.lastChecked}: {formatTimeInMadrid(data.updated_at) ?? "—"}
+              {lastCheckedLabel && (
+                <> · {t.lastChecked}: {lastCheckedLabel}</>
+              )}
             </p>
           )}
         </div>

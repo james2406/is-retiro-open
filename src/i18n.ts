@@ -7,6 +7,8 @@ export interface Translations {
   lastChecked: string;
   yesterday: string;
   daysAgo: string;
+  justNow: string;
+  minutesAgo: string;
   likelyClosedNowAlert: string;
   likelyClosedNowDescription: string;
   warningSoonAlert: string;
@@ -37,6 +39,8 @@ const translations: Record<Locale, Translations> = {
     lastChecked: "Última comprobación",
     yesterday: "ayer",
     daysAgo: "hace {n} días",
+    justNow: "ahora mismo",
+    minutesAgo: "hace {n} min",
     likelyClosedNowAlert: "Alerta activa · Verifica en @MADRID →",
     likelyClosedNowDescription: "Podría estar cerrado por alerta meteorológica activa.",
     warningSoonAlert: "Aviso próximo · Verifica en @MADRID →",
@@ -74,6 +78,8 @@ const translations: Record<Locale, Translations> = {
     lastChecked: "Last checked",
     yesterday: "yesterday",
     daysAgo: "{n} days ago",
+    justNow: "just now",
+    minutesAgo: "{n} min ago",
     likelyClosedNowAlert: "Active warning · Verify on @MADRID →",
     likelyClosedNowDescription: "It may already be closed due to an active weather warning.",
     warningSoonAlert: "Warning soon · Verify on @MADRID →",

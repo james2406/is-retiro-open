@@ -9,6 +9,7 @@ interface UseRetiroStatusResult {
   error: string | null;
   isOffline: boolean;
   lastChangedAt: string | null;
+  lastCheckedAt: number | null;
   refetch: UseQueryResult<RetiroStatus, Error>["refetch"];
 }
 
@@ -34,6 +35,9 @@ export function useRetiroStatus(
 
   const [lastChangedAt, setLastChangedAt] = useState<string | null>(
     builtAt ?? initialData?.updated_at ?? null,
+  );
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(
+    initialData ? Date.now() : null,
   );
   const prevFingerprint = useRef<string | null>(
     initialData ? statusFingerprint(initialData) : null,
@@ -64,9 +68,10 @@ export function useRetiroStatus(
     refetchInterval: 60 * 1000, // Refetch every minute
   });
 
-  // Detect data changes across refetches and update lastChangedAt
+  // Detect data changes across refetches and update lastChangedAt + lastCheckedAt
   useEffect(() => {
     if (!data) return;
+    setLastCheckedAt(Date.now());
     const fp = statusFingerprint(data);
     if (prevFingerprint.current === null) {
       // First fetch (no initial data) — seed fingerprint and ensure lastChangedAt is set
@@ -86,6 +91,7 @@ export function useRetiroStatus(
     error: error instanceof Error ? error.message : (error ? String(error) : null),
     isOffline,
     lastChangedAt,
+    lastCheckedAt,
     refetch
   };
 }

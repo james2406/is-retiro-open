@@ -18,7 +18,7 @@ interface AppProps {
 
 function App({ initialData = null, initialLocale, builtAt }: AppProps) {
   const [locale, setLocale] = useState<Locale>(initialLocale || "es");
-  const { data, loading, error, isOffline, lastChangedAt } = useRetiroStatus(initialData, builtAt);
+  const { data, loading, error, isOffline, lastChangedAt, lastCheckedAt } = useRetiroStatus(initialData, builtAt);
   const weatherWarnings = useWeatherWarnings();
 
   useEffect(() => {
@@ -85,6 +85,7 @@ function App({ initialData = null, initialLocale, builtAt }: AppProps) {
           isOffline={isOffline}
           weatherWarnings={weatherWarnings}
           lastChangedAt={lastChangedAt}
+          lastCheckedAt={lastCheckedAt}
           t={t}
         />
 
