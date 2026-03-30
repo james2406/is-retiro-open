@@ -1,3 +1,4 @@
+import { useRef, useState, useEffect } from "react";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { RetiroStatus } from "../types";
 import { fetchRetiroStatus, getMockData } from "../utils/madridApi";
@@ -7,19 +8,40 @@ interface UseRetiroStatusResult {
   loading: boolean;
   error: string | null;
   isOffline: boolean;
+  lastChangedAt: string | null;
+  lastCheckedAt: number | null;
   refetch: UseQueryResult<RetiroStatus, Error>["refetch"];
+}
+
+/** Fields that indicate a meaningful status change from Madrid. */
+function statusFingerprint(d: RetiroStatus): string {
+  return JSON.stringify([d.code, d.source_updated_at, d.incidents, d.observations]);
 }
 
 /**
  * Custom hook to fetch and manage the status of El Retiro park.
  * Uses TanStack Query for caching, background updates, and offline support.
- * 
- * @param initialData - Optional initial data for SSR/SSG hydration
- * @returns Object containing status data, loading state, error, offline status, and refetch function
+ *
+ * Tracks `lastChangedAt` — the timestamp when we last detected a change in
+ * the underlying Madrid data. Initialised from `builtAt` (builds only trigger
+ * on data changes) and updated on client-side refetches when the data differs.
  */
-export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRetiroStatusResult {
+export function useRetiroStatus(
+  initialData: RetiroStatus | null = null,
+  builtAt?: string,
+): UseRetiroStatusResult {
   const isBrowser = typeof window !== 'undefined';
   const isOffline = isBrowser && !navigator.onLine;
+
+  const [lastChangedAt, setLastChangedAt] = useState<string | null>(
+    builtAt ?? initialData?.updated_at ?? null,
+  );
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(
+    initialData ? Date.now() : null,
+  );
+  const prevFingerprint = useRef<string | null>(
+    initialData ? statusFingerprint(initialData) : null,
+  );
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['retiroStatus'],
@@ -46,11 +68,30 @@ export function useRetiroStatus(initialData: RetiroStatus | null = null): UseRet
     refetchInterval: 60 * 1000, // Refetch every minute
   });
 
+  // Detect data changes across refetches and update lastChangedAt + lastCheckedAt
+  useEffect(() => {
+    if (!data) return;
+    setLastCheckedAt(Date.now());
+    const fp = statusFingerprint(data);
+    if (prevFingerprint.current === null) {
+      // First fetch (no initial data) — seed fingerprint and ensure lastChangedAt is set
+      prevFingerprint.current = fp;
+      setLastChangedAt((current) => current ?? data.updated_at);
+      return;
+    }
+    if (fp !== prevFingerprint.current) {
+      setLastChangedAt(new Date().toISOString());
+    }
+    prevFingerprint.current = fp;
+  }, [data]);
+
   return {
     data: data || null,
     loading: isLoading,
     error: error instanceof Error ? error.message : (error ? String(error) : null),
     isOffline,
+    lastChangedAt,
+    lastCheckedAt,
     refetch
   };
 }

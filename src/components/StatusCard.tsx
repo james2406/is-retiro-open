@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Info, AlertTriangle } from "lucide-react";
 import type {
   RetiroStatus,
@@ -20,15 +21,36 @@ interface StatusCardProps {
   error: string | null;
   isOffline: boolean;
   weatherWarnings: WeatherWarningSignal;
-  builtAt?: string;
+  lastChangedAt: string | null;
+  lastCheckedAt: number | null;
   t: Translations;
 }
 
 /**
- * Formats an ISO timestamp as "HH:MM" in the Europe/Madrid timezone.
- * Returns null if the timestamp is invalid or missing.
+ * Returns a relative time label that ticks every 15s.
  */
-function formatBuiltAtTime(isoString: string | undefined): string | null {
+function useRelativeTime(
+  timestamp: number | null,
+  translations: { justNow: string; minutesAgo: string },
+): string | null {
+  const [now, setNow] = useState(Date.now);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (timestamp === null) return null;
+  const diffSec = Math.floor((now - timestamp) / 1000);
+  if (diffSec < 60) return translations.justNow;
+  const mins = Math.floor(diffSec / 60);
+  return translations.minutesAgo.replace("{n}", String(mins));
+}
+
+/**
+ * Formats an ISO timestamp as "HH:MM" in the Europe/Madrid timezone.
+ */
+function formatTimeInMadrid(isoString: string | undefined): string | null {
   if (!isoString) return null;
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return null;
@@ -41,15 +63,50 @@ function formatBuiltAtTime(isoString: string | undefined): string | null {
   });
 }
 
+/**
+ * Formats an ISO timestamp as either HH:MM (if today in Madrid) or a relative
+ * string ("yesterday", "N days ago") if older.
+ */
+function formatLastChanged(
+  isoString: string | null,
+  translations: { yesterday: string; daysAgo: string },
+): string | null {
+  if (!isoString) return null;
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return null;
+
+  // Get today's date in Madrid timezone
+  const now = new Date();
+  const madridToday = now.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+  const changedDay = date.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
+
+  if (changedDay === madridToday) {
+    return formatTimeInMadrid(isoString);
+  }
+
+  // Use Date.UTC to avoid local-timezone parsing shifting the day
+  const todayParts = madridToday.split("-");
+  const changedParts = changedDay.split("-");
+  const todayUtc = Date.UTC(parseInt(todayParts[0]), parseInt(todayParts[1]) - 1, parseInt(todayParts[2]));
+  const changedUtc = Date.UTC(parseInt(changedParts[0]), parseInt(changedParts[1]) - 1, parseInt(changedParts[2]));
+  const diffDays = Math.floor((todayUtc - changedUtc) / 86400000);
+
+  if (diffDays === 1) return translations.yesterday;
+  if (diffDays > 1) return translations.daysAgo.replace("{n}", String(diffDays));
+  return null;
+}
+
 export function StatusCard({
   data,
   loading,
   error,
   isOffline,
   weatherWarnings,
-  builtAt,
+  lastChangedAt,
+  lastCheckedAt,
   t,
 }: StatusCardProps) {
+  const lastCheckedLabel = useRelativeTime(lastCheckedAt, t);
   let theme: StatusTheme;
   let bigText: string;
   let description: string;
@@ -202,13 +259,17 @@ export function StatusCard({
             </p>
           )}
 
-          {/* Build timestamp */}
-          {data && formatBuiltAtTime(builtAt) && (
+          {/* Timestamps */}
+          {data && (
             <p
               className="mt-4 text-sm opacity-80"
               style={{ color: theme.textColor }}
             >
-              {t.lastUpdatedAt}: {formatBuiltAtTime(builtAt)}
+              {t.statusUpdated}:{" "}
+              {formatLastChanged(lastChangedAt, t) ?? "—"}
+              {lastCheckedLabel && (
+                <> · {t.lastChecked}: {lastCheckedLabel}</>
+              )}
             </p>
           )}
         </div>
