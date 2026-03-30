@@ -160,7 +160,7 @@ async function prerender() {
     console.log(`Rendering for locale: ${locale}`);
 
     // 3a. Render the app
-    const appHtml = render(statusData, locale);
+    const appHtml = render(statusData, locale, builtAt);
 
     // 3b. Inject into HTML
     // We replace the outlet <!--app-html--> and also inject the initial state

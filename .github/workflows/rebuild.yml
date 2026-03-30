@@ -41,8 +41,16 @@ jobs:
           fi
 
           echo "code=$CURRENT_CODE" >> "$GITHUB_OUTPUT"
-          echo "incidents=$CURRENT_INCIDENTS" >> "$GITHUB_OUTPUT"
-          echo "observations=$CURRENT_OBSERVATIONS" >> "$GITHUB_OUTPUT"
+          {
+            echo "incidents<<__INCIDENTS_EOF__"
+            printf '%s\n' "$CURRENT_INCIDENTS"
+            echo "__INCIDENTS_EOF__"
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "observations<<__OBSERVATIONS_EOF__"
+            printf '%s\n' "$CURRENT_OBSERVATIONS"
+            echo "__OBSERVATIONS_EOF__"
+          } >> "$GITHUB_OUTPUT"
           echo "Current status: code=$CURRENT_CODE"
 
       - name: Fetch last known status from deployed site
@@ -59,8 +67,16 @@ jobs:
             DEPLOYED_INCIDENTS=$(jq -r '.incidents // ""' /tmp/status.json)
             DEPLOYED_OBSERVATIONS=$(jq -r '.observations // ""' /tmp/status.json)
             echo "code=$DEPLOYED_CODE" >> "$GITHUB_OUTPUT"
-            echo "incidents=$DEPLOYED_INCIDENTS" >> "$GITHUB_OUTPUT"
-            echo "observations=$DEPLOYED_OBSERVATIONS" >> "$GITHUB_OUTPUT"
+            {
+              echo "incidents<<__INCIDENTS_EOF__"
+              printf '%s\n' "$DEPLOYED_INCIDENTS"
+              echo "__INCIDENTS_EOF__"
+            } >> "$GITHUB_OUTPUT"
+            {
+              echo "observations<<__OBSERVATIONS_EOF__"
+              printf '%s\n' "$DEPLOYED_OBSERVATIONS"
+              echo "__OBSERVATIONS_EOF__"
+            } >> "$GITHUB_OUTPUT"
             echo "Deployed status: code=$DEPLOYED_CODE"
           fi
 
