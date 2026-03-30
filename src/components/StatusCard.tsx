@@ -20,65 +20,25 @@ interface StatusCardProps {
   error: string | null;
   isOffline: boolean;
   weatherWarnings: WeatherWarningSignal;
+  builtAt?: string;
   t: Translations;
 }
 
 /**
- * Parses a date string in DD/MM/YYYY format and returns a Date object.
- * Returns null if the date is invalid.
+ * Formats an ISO timestamp as "HH:MM" in the Europe/Madrid timezone.
+ * Returns null if the timestamp is invalid or missing.
  */
-function parseSourceDate(dateStr: string): Date | null {
-  const parts = dateStr.split("/");
-  if (parts.length !== 3) return null;
+function formatBuiltAtTime(isoString: string | undefined): string | null {
+  if (!isoString) return null;
+  const date = new Date(isoString);
+  if (isNaN(date.getTime())) return null;
 
-  const [day, month, year] = parts.map(Number);
-  if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-
-  const date = new Date(year, month - 1, day);
-  // Validate the date is real (e.g., not Feb 31)
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return null;
-  }
-
-  return date;
-}
-
-/**
- * Returns the number of days between the source date and today in Madrid timezone.
- * Returns null if the date is invalid.
- */
-function getSourceDaysAgo(dateStr: string | null): number | null {
-  if (!dateStr) return null;
-
-  const sourceDate = parseSourceDate(dateStr);
-  if (!sourceDate) return null;
-
-  // Get today's date in Madrid timezone
-  const madridNow = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" });
-  const [year, month, day] = madridNow.split("-").map(Number);
-  const todayMadrid = new Date(year, month - 1, day);
-
-  const diffMs = todayMadrid.getTime() - sourceDate.getTime();
-  return Math.round(diffMs / (1000 * 60 * 60 * 24));
-}
-
-/**
- * Formats the source date as a relative string: "today", "yesterday", "N days ago".
- */
-function formatRelativeDate(
-  dateStr: string | null,
-  t: { relativeToday: string; relativeYesterday: string; relativeDaysAgo: (days: number) => string }
-): string | null {
-  const daysAgo = getSourceDaysAgo(dateStr);
-  if (daysAgo === null || daysAgo < 0) return null;
-
-  if (daysAgo === 0) return t.relativeToday;
-  if (daysAgo === 1) return t.relativeYesterday;
-  return t.relativeDaysAgo(daysAgo);
+  return date.toLocaleTimeString("es-ES", {
+    timeZone: "Europe/Madrid",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 export function StatusCard({
@@ -87,6 +47,7 @@ export function StatusCard({
   error,
   isOffline,
   weatherWarnings,
+  builtAt,
   t,
 }: StatusCardProps) {
   let theme: StatusTheme;
@@ -241,13 +202,13 @@ export function StatusCard({
             </p>
           )}
 
-          {/* Source update timestamp */}
-          {data && formatRelativeDate(data.source_updated_at, t) && (
+          {/* Build timestamp */}
+          {data && formatBuiltAtTime(builtAt) && (
             <p
               className="mt-4 text-sm opacity-80"
               style={{ color: theme.textColor }}
             >
-              {t.lastSourceUpdate}: {formatRelativeDate(data.source_updated_at, t)}
+              {t.lastUpdatedAt}: {formatBuiltAtTime(builtAt)}
             </p>
           )}
         </div>

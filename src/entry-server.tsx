@@ -5,12 +5,12 @@ import { Providers } from "./components/Providers";
 import { RetiroStatus } from "./types";
 import { Locale } from "./i18n";
 
-export function render(data: RetiroStatus | null, locale: Locale) {
+export function render(data: RetiroStatus | null, locale: Locale, builtAt?: string) {
   // We need to inject the data into the app so it renders with content
   return ReactDOMServer.renderToString(
     <React.StrictMode>
       <Providers>
-        <App initialData={data} initialLocale={locale} />
+        <App initialData={data} initialLocale={locale} builtAt={builtAt} />
       </Providers>
     </React.StrictMode>
   );

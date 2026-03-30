@@ -139,12 +139,28 @@ async function prerender() {
     console.log(`Generated manifest: ${manifestPath}`);
   }
 
-  // 4. Render for each locale
+  // 4. Write status.json for smart rebuild comparison
+  const builtAt = new Date().toISOString();
+  const statusJson = {
+    code: statusData.code,
+    status: statusData.status,
+    incidents: statusData.incidents,
+    observations: statusData.observations,
+    source_updated_at: statusData.source_updated_at,
+    built_at: builtAt,
+  };
+  fs.writeFileSync(
+    toAbsolute("dist/status.json"),
+    JSON.stringify(statusJson, null, 2)
+  );
+  console.log("Generated dist/status.json");
+
+  // 5. Render for each locale
   for (const locale of LOCALES) {
     console.log(`Rendering for locale: ${locale}`);
 
     // 3a. Render the app
-    const appHtml = render(statusData, locale);
+    const appHtml = render(statusData, locale, builtAt);
 
     // 3b. Inject into HTML
     // We replace the outlet <!--app-html--> and also inject the initial state
@@ -153,7 +169,7 @@ async function prerender() {
       .replace(`<!--app-html-->`, appHtml)
       .replace(
         `<!--app-data-->`,
-        `<script>window.__INITIAL_DATA__ = ${serializeForScript(statusData)}; window.__INITIAL_LOCALE__ = "${locale}";</script>`
+        `<script>window.__INITIAL_DATA__ = ${serializeForScript(statusData)}; window.__INITIAL_LOCALE__ = "${locale}"; window.__BUILT_AT__ = "${builtAt}";</script>`
       )
       .replace('lang="es"', `lang="${locale}"`);
 

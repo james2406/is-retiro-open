@@ -11,11 +11,12 @@ const container = document.getElementById("root");
 if (container) {
   const initialData = window.__INITIAL_DATA__;
   const initialLocale = window.__INITIAL_LOCALE__;
+  const builtAt = window.__BUILT_AT__;
 
   const Root = () => (
     <React.StrictMode>
       <Providers>
-        <App initialData={initialData} initialLocale={initialLocale} />
+        <App initialData={initialData} initialLocale={initialLocale} builtAt={builtAt} />
         <Analytics />
         <SpeedInsights />
       </Providers>
