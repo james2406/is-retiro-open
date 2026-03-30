@@ -14,7 +14,7 @@ jobs:
         id: current
         run: |
           RESPONSE=$(curl -fsS --max-time 10 \
-            "https://sigma.madrid.es/hosted/rest/services/MEDIO_AMBIENTE/ALERTAS_PARQUES/MapServer/0/query?where=1%3D1&outFields=ZONA_VERDE,ALERTA_DESCRIPCION,HORARIO_INCIDENCIA,OBSERVACIONES&f=json")
+            "https://sigma.madrid.es/hosted/rest/services/MEDIO_AMBIENTE/ALERTAS_PARQUES/MapServer/0/query?where=1%3D1&outFields=ZONA_VERDE,ALERTA_DESCRIPCION,HORARIO_INCIDENCIA,OBSERVACIONES,FECHA_INCIDENCIA&f=json")
 
           # Extract the Retiro feature and its alert code
           CURRENT_CODE=$(echo "$RESPONSE" | jq -r '

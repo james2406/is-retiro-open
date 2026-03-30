@@ -61,8 +61,12 @@ function formatLastChanged(
     return formatTimeInMadrid(isoString);
   }
 
-  const diffMs = new Date(madridToday).getTime() - new Date(changedDay).getTime();
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+  // Use Date.UTC to avoid local-timezone parsing shifting the day
+  const todayParts = madridToday.split("-");
+  const changedParts = changedDay.split("-");
+  const todayUtc = Date.UTC(parseInt(todayParts[0]), parseInt(todayParts[1]) - 1, parseInt(todayParts[2]));
+  const changedUtc = Date.UTC(parseInt(changedParts[0]), parseInt(changedParts[1]) - 1, parseInt(changedParts[2]));
+  const diffDays = Math.floor((todayUtc - changedUtc) / 86400000);
 
   if (diffDays === 1) return translations.yesterday;
   if (diffDays > 1) return translations.daysAgo.replace("{n}", String(diffDays));

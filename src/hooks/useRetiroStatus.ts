@@ -14,7 +14,7 @@ interface UseRetiroStatusResult {
 
 /** Fields that indicate a meaningful status change from Madrid. */
 function statusFingerprint(d: RetiroStatus): string {
-  return `${d.code}|${d.source_updated_at}|${d.incidents}|${d.observations}`;
+  return JSON.stringify([d.code, d.source_updated_at, d.incidents, d.observations]);
 }
 
 /**
@@ -32,7 +32,9 @@ export function useRetiroStatus(
   const isBrowser = typeof window !== 'undefined';
   const isOffline = isBrowser && !navigator.onLine;
 
-  const [lastChangedAt, setLastChangedAt] = useState<string | null>(builtAt ?? null);
+  const [lastChangedAt, setLastChangedAt] = useState<string | null>(
+    builtAt ?? initialData?.updated_at ?? null,
+  );
   const prevFingerprint = useRef<string | null>(
     initialData ? statusFingerprint(initialData) : null,
   );
@@ -66,7 +68,13 @@ export function useRetiroStatus(
   useEffect(() => {
     if (!data) return;
     const fp = statusFingerprint(data);
-    if (prevFingerprint.current !== null && fp !== prevFingerprint.current) {
+    if (prevFingerprint.current === null) {
+      // First fetch (no initial data) — seed fingerprint and ensure lastChangedAt is set
+      prevFingerprint.current = fp;
+      setLastChangedAt((current) => current ?? data.updated_at);
+      return;
+    }
+    if (fp !== prevFingerprint.current) {
       setLastChangedAt(new Date().toISOString());
     }
     prevFingerprint.current = fp;
