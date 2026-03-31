@@ -37,11 +37,11 @@ const translations: Record<Locale, Translations> = {
   es: {
     headerTitle: "¿Está abierto el Retiro?",
     loading: "Cargando...",
-    statusUpdated: "Estado oficial a las",
+    statusUpdated: "Estado oficial desde las",
     lastChecked: "Comprobado",
     yesterday: " de ayer",
     daysAgo: " hace {n} días",
-    justNow: "ahora mismo",
+    justNow: "ahora",
     minutesAgo: "hace {n} min",
     likelyClosedNowAlert: "Alerta activa · Verifica en @MADRID →",
     likelyClosedNowDescription: "Podría estar cerrado por alerta meteorológica activa.",
