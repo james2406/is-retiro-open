@@ -93,8 +93,9 @@ function formatLastChanged(
   const changedUtc = Date.UTC(parseInt(changedParts[0]), parseInt(changedParts[1]) - 1, parseInt(changedParts[2]));
   const diffDays = Math.floor((todayUtc - changedUtc) / 86400000);
 
-  if (diffDays === 1) return translations.yesterday;
-  if (diffDays > 1) return translations.daysAgo.replace("{n}", String(diffDays));
+  const time = formatTimeInMadrid(isoString) ?? "";
+  if (diffDays === 1) return time + translations.yesterday;
+  if (diffDays > 1) return time + translations.daysAgo.replace("{n}", String(diffDays));
   return null;
 }
 
@@ -299,10 +300,9 @@ export function StatusCard({
               className="mt-4 text-sm opacity-80"
               style={{ color: theme.textColor }}
             >
-              {t.statusUpdated}:{" "}
-              {formatLastChanged(lastChangedAt, t) ?? "—"}
+              {t.statusUpdated} {formatLastChanged(lastChangedAt, t) ?? "—"}
               {lastCheckedLabel && (
-                <> · {t.lastChecked}: {lastCheckedLabel}</>
+                <> · {t.lastChecked} {lastCheckedLabel}</>
               )}
             </p>
           )}
