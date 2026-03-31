@@ -67,7 +67,7 @@ test("summer pre-dawn, closed", () => {
   assert.equal(result.state, "closed_for_night");
 });
 
-test("exactly at opening time (6:00), open", () => {
+test("exactly at opening time (06:00), open", () => {
   // Jan 15, 06:00 Madrid = 05:00 UTC
   const result = resolveParkHours(new Date("2026-01-15T05:00:00Z"));
   assert.equal(result.state, "open");

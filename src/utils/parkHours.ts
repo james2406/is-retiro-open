@@ -58,7 +58,7 @@ export function resolveParkHours(now?: Date): ParkHoursInfo {
     if (hour === 23) {
       return { state: "closing_soon", openTime: "06:00", closeTime };
     }
-    // 6:00–22:59 → open
+    // 06:00–22:59 → open
     return { state: "open", openTime: "06:00", closeTime };
   }
 
