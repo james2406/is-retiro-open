@@ -73,5 +73,5 @@ export function resolveParkHours(now?: Date): ParkHoursInfo {
     return { state: "closing_soon", openTime: "06:00", closeTime };
   }
 
-  return { state: "open", openTime: "6:00", closeTime };
+  return { state: "open", openTime: "06:00", closeTime };
 }
