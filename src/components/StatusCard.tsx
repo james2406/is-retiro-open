@@ -6,7 +6,7 @@ import type {
   StatusTheme,
   WeatherWarningSignal,
 } from "../types";
-import { STATUS_THEMES, ERROR_THEME } from "../types";
+import { STATUS_THEMES, ERROR_THEME, NIGHT_THEME } from "../types";
 import type { Translations } from "../i18n";
 import {
   resolveClosureAdvisory,
@@ -138,6 +138,7 @@ export function StatusCard({
 
       // Nighttime override: codes 1-4 show as closed with navy theme
       if (parkHours.state === "closed_for_night" && code <= 4) {
+        theme = NIGHT_THEME;
         bigText = t.status[5].big; // "CERRADO" / "CLOSED"
         description = t.parkHoursClosedForNight;
         // Suppress weather advisories and observations — park is physically closed
