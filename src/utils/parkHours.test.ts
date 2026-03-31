@@ -34,7 +34,7 @@ test("summer midday, open", () => {
   // Jul 15, 14:00 Madrid = 12:00 UTC (CEST)
   const result = resolveParkHours(new Date("2026-07-15T12:00:00Z"));
   assert.equal(result.state, "open");
-  assert.equal(result.closeTime, "0:00");
+  assert.equal(result.closeTime, "00:00");
 });
 
 test("summer evening, closing soon", () => {
@@ -67,7 +67,7 @@ test("summer pre-dawn, closed", () => {
   assert.equal(result.state, "closed_for_night");
 });
 
-test("exactly at opening time (6:00), open", () => {
+test("exactly at opening time (06:00), open", () => {
   // Jan 15, 06:00 Madrid = 05:00 UTC
   const result = resolveParkHours(new Date("2026-01-15T05:00:00Z"));
   assert.equal(result.state, "open");
@@ -109,7 +109,7 @@ test("season boundary: April 1 uses summer schedule", () => {
   // Apr 1, 21:30 Madrid = 19:30 UTC (CEST)
   const result = resolveParkHours(new Date("2026-04-01T19:30:00Z"));
   assert.equal(result.state, "open");
-  assert.equal(result.closeTime, "0:00");
+  assert.equal(result.closeTime, "00:00");
 });
 
 test("summer 22:00 is still open (closes at midnight)", () => {
@@ -124,9 +124,9 @@ test("summer 22:59 is still open", () => {
   assert.equal(result.state, "open");
 });
 
-test("openTime is always 6:00", () => {
+test("openTime is always 06:00", () => {
   const winter = resolveParkHours(new Date("2026-01-15T09:00:00Z"));
   const summer = resolveParkHours(new Date("2026-07-15T12:00:00Z"));
-  assert.equal(winter.openTime, "6:00");
-  assert.equal(summer.openTime, "6:00");
+  assert.equal(winter.openTime, "06:00");
+  assert.equal(summer.openTime, "06:00");
 });

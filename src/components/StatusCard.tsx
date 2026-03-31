@@ -178,7 +178,7 @@ export function StatusCard({
             if (code === 1) {
               description = description.replace(
                 ".",
-                ` (6:00 – ${parkHours.closeTime}).`,
+                ` (06:00 – ${parkHours.closeTime}).`,
               );
             }
           }
