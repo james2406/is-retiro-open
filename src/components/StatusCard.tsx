@@ -210,10 +210,15 @@ export function StatusCard({
     parkHoursPillText = t.parkHoursClosingSoon.replace("{time}", parkHours.closeTime);
   }
 
-  const predictedOpeningPillText =
-    data && data.code >= 5 && data.predicted_opening
-      ? t.predictedOpeningTime.replace("{time}", data.predicted_opening)
-      : null;
+  const predictedOpeningPillText = (() => {
+    if (!data || data.code < 5 || !data.predicted_opening) return null;
+    if (isSpanish) {
+      const hour = parseInt(data.predicted_opening.split(":")[0], 10);
+      const article = hour === 1 ? "a la" : "a las";
+      return `Previsión de apertura ${article} ${data.predicted_opening}`;
+    }
+    return t.predictedOpeningTime.replace("{time}", data.predicted_opening);
+  })();
 
   return (
     <main
