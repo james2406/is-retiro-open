@@ -96,7 +96,7 @@ const translations: Record<Locale, Translations> = {
       "Official park status may lag while an AEMET warning is active.",
     parkHoursClosedForNight: "Night hours. Opens at 06:00.",
     parkHoursClosingSoon: "Closes at {time}",
-    predictedOpeningTime: "Opens at {time}",
+    predictedOpeningTime: "Expected to open at {time}",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",
