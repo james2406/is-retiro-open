@@ -13,6 +13,8 @@ export interface RetiroStatus {
   updated_at: string;
   /** Date when Madrid last updated the alert (format: "DD/MM/YYYY" from FECHA_INCIDENCIA) */
   source_updated_at: string | null;
+  /** Predicted reopening time when park is closed (format: "HH:MM" from PREVISION_APERTURA) */
+  predicted_opening: string | null;
 }
 
 export interface WeatherWarningSignal {

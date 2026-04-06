@@ -210,6 +210,11 @@ export function StatusCard({
     parkHoursPillText = t.parkHoursClosingSoon.replace("{time}", parkHours.closeTime);
   }
 
+  const predictedOpeningPillText =
+    data && data.code >= 5 && data.predicted_opening
+      ? t.predictedOpeningTime.replace("{time}", data.predicted_opening)
+      : null;
+
   return (
     <main
       className="flex-1 flex flex-col items-center justify-center px-4 py-8 sm:p-8"
@@ -285,6 +290,17 @@ export function StatusCard({
             >
               <Clock className="w-6 h-6 shrink-0" />
               <span className="text-lg font-medium">{parkHoursPillText}</span>
+            </div>
+          )}
+
+          {/* Predicted opening pill - only when park is weather-closed (codes 5-6) */}
+          {predictedOpeningPillText && (
+            <div
+              className="mt-4 flex items-center gap-3 bg-black/20 rounded-xl px-5 py-4"
+              style={{ color: theme.textColor }}
+            >
+              <Clock className="w-6 h-6 shrink-0" />
+              <span className="text-lg font-medium">{predictedOpeningPillText}</span>
             </div>
           )}
 
