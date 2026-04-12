@@ -99,6 +99,20 @@ function formatLastChanged(
   return null;
 }
 
+/**
+ * Render the main status card UI showing park status, description, advisory/park-hours/predicted-opening pills, observations, and timestamps.
+ *
+ * The component chooses content and visual theme from the provided `data`, `parkHours`, `weatherWarnings`, and translation `t`. It:
+ * - Shows a loading label when `loading` is true.
+ * - Shows offline/error messages only when there is no `data`.
+ * - When `data` is present, derives theme, big status text, description, advisory state, and which auxiliary pills to show (advisory, park-hours, predicted opening).
+ * - Applies a nighttime override when `parkHours.state` is `"closed_for_night"`.
+ * - Shows the predicted-opening pill only when `data.code >= 5` and `data.predicted_opening` is provided.
+ * - Shows Madrid observations only for Spanish UI when `data.code === 2`.
+ * - Formats relative and local timestamps using `useRelativeTime` and `formatLastChanged`.
+ *
+ * @returns A JSX element containing the status card UI.
+ */
 export function StatusCard({
   data,
   loading,
