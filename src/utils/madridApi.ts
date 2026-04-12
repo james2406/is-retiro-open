@@ -133,7 +133,7 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
     updated_at: new Date().toISOString(),
     // Date when Madrid last updated the alert (format: "DD/MM/YYYY")
     source_updated_at: FECHA_INCIDENCIA || null,
-    predicted_opening: formatAperturaTime(PREVISION_APERTURA ?? null),
+    predicted_opening: formatAperturaTime(PREVISION_APERTURA),
   };
 }
 

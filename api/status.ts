@@ -9,7 +9,6 @@ interface MadridAPIFeature {
     OBSERVACIONES: string | null;
     /** Epoch milliseconds or null when park is not closed */
     PREVISION_APERTURA: number | null;
-    [key: string]: unknown;
   };
 }
 
@@ -120,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const params = new URLSearchParams({
       where: "1=1",
-      outFields: "*",
+      outFields: "ZONA_VERDE,ALERTA_DESCRIPCION,FECHA_INCIDENCIA,HORARIO_INCIDENCIA,OBSERVACIONES,PREVISION_APERTURA",
       f: "json",
     });
 
@@ -150,9 +149,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!retiroFeature) {
       throw new Error("Retiro park data not found");
     }
-
-    // Log all attributes to discover fields we may not be tracking
-    console.log("Retiro raw attributes:", JSON.stringify(retiroFeature.attributes));
 
     const { ALERTA_DESCRIPCION, FECHA_INCIDENCIA, HORARIO_INCIDENCIA, OBSERVACIONES, PREVISION_APERTURA } =
       retiroFeature.attributes;

@@ -18,7 +18,6 @@ export interface Translations {
   adjustedStatusNote: string;
   parkHoursClosedForNight: string;
   parkHoursClosingSoon: string;
-  predictedOpeningTime: string;
   dataProvidedBy: string;
   license: string;
   checkOfficialSite: string;
@@ -54,7 +53,6 @@ const translations: Record<Locale, Translations> = {
       "El parte oficial del parque puede retrasarse durante alertas activas de AEMET.",
     parkHoursClosedForNight: "Horario nocturno. Abre a las 06:00.",
     parkHoursClosingSoon: "Cierra a las {time}",
-    predictedOpeningTime: "",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
     checkOfficialSite: "Ver web oficial",
@@ -96,7 +94,6 @@ const translations: Record<Locale, Translations> = {
       "Official park status may lag while an AEMET warning is active.",
     parkHoursClosedForNight: "Night hours. Opens at 06:00.",
     parkHoursClosingSoon: "Closes at {time}",
-    predictedOpeningTime: "Expected to open at {time}",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",
