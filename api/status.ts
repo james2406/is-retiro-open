@@ -7,7 +7,22 @@ interface MadridAPIFeature {
     FECHA_INCIDENCIA: string | null;
     HORARIO_INCIDENCIA: string | null;
     OBSERVACIONES: string | null;
+    /** Epoch milliseconds or null when park is not closed */
+    PREVISION_APERTURA: number | null;
   };
+}
+
+/** Converts an ArcGIS epoch-ms date to "HH:MM" in the Europe/Madrid timezone. */
+function formatAperturaTime(epochMs: number | null): string | null {
+  if (epochMs === null) return null;
+  const date = new Date(epochMs);
+  if (isNaN(date.getTime())) return null;
+  return date.toLocaleTimeString("es-ES", {
+    timeZone: "Europe/Madrid",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
 }
 
 interface MadridAPIResponse {
@@ -76,6 +91,7 @@ function getMockData(code?: number) {
     observations: mockCode === 2 ? "Obras en la zona del estanque" : null,
     updated_at: new Date().toISOString(),
     source_updated_at: mockSourceDate,
+    predicted_opening: mockCode >= 5 ? "18:00" : null,
   };
 }
 
@@ -103,8 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const params = new URLSearchParams({
       where: "1=1",
-      outFields:
-        "ZONA_VERDE,ALERTA_DESCRIPCION,FECHA_INCIDENCIA,HORARIO_INCIDENCIA,OBSERVACIONES",
+      outFields: "ZONA_VERDE,ALERTA_DESCRIPCION,FECHA_INCIDENCIA,HORARIO_INCIDENCIA,OBSERVACIONES,PREVISION_APERTURA",
       f: "json",
     });
 
@@ -135,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error("Retiro park data not found");
     }
 
-    const { ALERTA_DESCRIPCION, FECHA_INCIDENCIA, HORARIO_INCIDENCIA, OBSERVACIONES } =
+    const { ALERTA_DESCRIPCION, FECHA_INCIDENCIA, HORARIO_INCIDENCIA, OBSERVACIONES, PREVISION_APERTURA } =
       retiroFeature.attributes;
     const alertCode = ALERTA_DESCRIPCION || 1;
 
@@ -147,6 +162,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       observations: OBSERVACIONES || null,
       updated_at: new Date().toISOString(),
       source_updated_at: FECHA_INCIDENCIA || null,
+      predicted_opening: formatAperturaTime(PREVISION_APERTURA),
     };
 
     // Set cache headers

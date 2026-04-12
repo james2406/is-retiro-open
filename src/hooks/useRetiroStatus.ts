@@ -15,7 +15,7 @@ interface UseRetiroStatusResult {
 
 /** Fields that indicate a meaningful status change from Madrid. */
 function statusFingerprint(d: RetiroStatus): string {
-  return JSON.stringify([d.code, d.source_updated_at, d.incidents, d.observations]);
+  return JSON.stringify([d.code, d.source_updated_at, d.incidents, d.observations, d.predicted_opening]);
 }
 
 /**
