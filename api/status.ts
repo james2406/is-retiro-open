@@ -12,7 +12,12 @@ interface MadridAPIFeature {
   };
 }
 
-/** Converts an ArcGIS epoch-ms date to "HH:MM" in the Europe/Madrid timezone. */
+/**
+ * Format an epoch-millisecond timestamp as "HH:MM" in the Europe/Madrid timezone.
+ *
+ * @param epochMs - The epoch time in milliseconds, or `null`
+ * @returns The time formatted as `HH:MM` (24-hour) for Europe/Madrid, or `null` if `epochMs` is `null` or not a valid date
+ */
 function formatAperturaTime(epochMs: number | null): string | null {
   if (epochMs === null) return null;
   const date = new Date(epochMs);

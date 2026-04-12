@@ -91,9 +91,10 @@ export async function fetchWithRetry(url: string, retries = 3): Promise<Response
 }
 
 /**
- * Fetches the current status of El Retiro Park from the Madrid API.
- * Parses the response and maps it to our internal data model.
- * @returns Promise resolving to the RetiroStatus object.
+ * Retrieve and map El Retiro Park's current status from the Madrid API.
+ *
+ * @returns The current park status as a `RetiroStatus` object.
+ * @throws Error when Retiro park data is not found in the API response.
  */
 export async function fetchRetiroStatus(): Promise<RetiroStatus> {
   const params = new URLSearchParams({

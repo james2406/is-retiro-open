@@ -13,7 +13,14 @@ interface UseRetiroStatusResult {
   refetch: UseQueryResult<RetiroStatus, Error>["refetch"];
 }
 
-/** Fields that indicate a meaningful status change from Madrid. */
+/**
+ * Create a stable string fingerprint from selected `RetiroStatus` fields to detect meaningful status changes.
+ *
+ * Includes the `code`, `source_updated_at`, `incidents`, `observations`, and `predicted_opening` fields.
+ *
+ * @param d - The `RetiroStatus` object to fingerprint
+ * @returns A JSON-stringified representation of the selected fields suitable for change comparisons
+ */
 function statusFingerprint(d: RetiroStatus): string {
   return JSON.stringify([d.code, d.source_updated_at, d.incidents, d.observations, d.predicted_opening]);
 }
