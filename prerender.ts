@@ -145,6 +145,11 @@ async function prerender() {
 
   // Resolve the current seasonal schedule once for the opening-hours structured data.
   const parkHours = resolveParkHours();
+  // schema.org / Google order "00:00" before `opens`, so a midnight close is
+  // represented as "23:59". The park closes at midnight (not past it), so a single
+  // normalised entry is correct — no need to split across two days.
+  const schemaCloses =
+    parkHours.closeTime === "00:00" ? "23:59" : parkHours.closeTime;
 
   // 4. Write status.json for smart rebuild comparison
   const builtAt = new Date().toISOString();
@@ -219,7 +224,7 @@ async function prerender() {
             "Sunday",
           ],
           opens: parkHours.openTime,
-          closes: parkHours.closeTime,
+          closes: schemaCloses,
         },
       },
     });
