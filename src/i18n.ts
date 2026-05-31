@@ -18,6 +18,7 @@ export interface Translations {
   adjustedStatusNote: string;
   parkHoursClosedForNight: string;
   parkHoursClosingSoon: string;
+  parkHoursRegular: string;
   dataProvidedBy: string;
   license: string;
   checkOfficialSite: string;
@@ -53,11 +54,12 @@ const translations: Record<Locale, Translations> = {
       "El parte oficial del parque puede retrasarse durante alertas activas de AEMET.",
     parkHoursClosedForNight: "Horario nocturno. Abre a las 06:00.",
     parkHoursClosingSoon: "Cierra a las {time}",
+    parkHoursRegular: "Horario habitual: {open} – {close}",
     dataProvidedBy: "Datos facilitados por el",
     license: "Licencia: Madrid Open Data",
     checkOfficialSite: "Ver web oficial",
     status: {
-      1: { big: "ABIERTO", description: "Horario habitual." },
+      1: { big: "ABIERTO", description: "El parque está abierto." },
       2: { big: "ABIERTO*", description: "Incidencias reportadas." },
       3: {
         big: "ABIERTO*",
@@ -94,11 +96,12 @@ const translations: Record<Locale, Translations> = {
       "Official park status may lag while an AEMET warning is active.",
     parkHoursClosedForNight: "Night hours. Opens at 06:00.",
     parkHoursClosingSoon: "Closes at {time}",
+    parkHoursRegular: "Regular hours: {open} – {close}",
     dataProvidedBy: "Data provided by",
     license: "License: Madrid Open Data",
     checkOfficialSite: "Check official site",
     status: {
-      1: { big: "OPEN", description: "Regular hours." },
+      1: { big: "OPEN", description: "The park is open." },
       2: { big: "OPEN*", description: "Incidents reported." },
       3: {
         big: "OPEN*",

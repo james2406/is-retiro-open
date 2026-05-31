@@ -174,13 +174,6 @@ export function StatusCard({
             description = t.closingLaterTodayDescription;
           } else {
             description = t.status[code].description;
-            // Append today's hours to the code-1 description
-            if (code === 1) {
-              description = description.replace(
-                ".",
-                ` (06:00 – ${parkHours.closeTime}).`,
-              );
-            }
           }
         }
 
@@ -209,6 +202,13 @@ export function StatusCard({
   if (parkHours.state === "closing_soon") {
     parkHoursPillText = t.parkHoursClosingSoon.replace("{time}", parkHours.closeTime);
   }
+
+  // Regular schedule shown in every status state so visitors searching for the
+  // park's hours always find them on the page (the live status above stays the
+  // source of truth for whether it's actually open right now).
+  const parkHoursRegularText = t.parkHoursRegular
+    .replace("{open}", parkHours.openTime)
+    .replace("{close}", parkHours.closeTime);
 
   function formatPredictedOpening(time: string): string {
     if (isSpanish) {
@@ -259,6 +259,15 @@ export function StatusCard({
             style={{ color: theme.textColor }}
           >
             <p className="text-xl sm:text-2xl font-medium">{description}</p>
+
+            {/* Regular hours - always visible once we have a status, so the
+                "what time does Retiro close?" intent is always answered. */}
+            {data && (
+              <p className="flex items-center gap-1.5 text-base sm:text-lg font-medium opacity-90">
+                <Clock className="w-4 h-4 shrink-0" aria-hidden="true" />
+                {parkHoursRegularText}
+              </p>
+            )}
 
             {/* Observations (Code 2) */}
             {showObservations && data?.observations && (
