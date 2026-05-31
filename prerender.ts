@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchRetiroStatus } from "./src/utils/madridApi";
+import { resolveParkHours } from "./src/utils/parkHours";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const toAbsolute = (p: string) => path.resolve(__dirname, p);
@@ -11,10 +12,13 @@ type Locale = (typeof LOCALES)[number];
 
 const SITE_URL = "https://www.estaabiertoelretiro.com";
 
-// Static meta descriptions aimed at search snippets.
+// Static meta descriptions aimed at search snippets. These promise that the page
+// answers the "horario / a qué hora cierra" intent (a top search query) without
+// stating the actual times — so visitors click through to see the live status and
+// caveats rather than trusting a static snippet that could be out of date.
 const META_DESCRIPTIONS: Record<Locale, string> = {
-  es: "¿Está abierto el Retiro ahora? Consulta el estado en tiempo real del Parque del Retiro de Madrid, con datos del Ayuntamiento y avisos meteorológicos.",
-  en: "Is Retiro Park open now? Check real-time Retiro Park status in Madrid with official city data and weather warning context.",
+  es: "¿Está abierto el Retiro? Mira en tiempo real si el Parque del Retiro de Madrid está abierto, su horario y a qué hora cierra hoy, con datos oficiales.",
+  en: "Is Retiro Park open right now? Check the live status, today's opening hours and what time Retiro Park in Madrid closes, with official city data.",
 };
 
 // Open Graph status text (matches i18n.ts status.big values)
@@ -139,6 +143,14 @@ async function prerender() {
     console.log(`Generated manifest: ${manifestPath}`);
   }
 
+  // Resolve the current seasonal schedule once for the opening-hours structured data.
+  const parkHours = resolveParkHours();
+  // schema.org / Google order "00:00" before `opens`, so a midnight close is
+  // represented as "23:59". The park closes at midnight (not past it), so a single
+  // normalised entry is correct — no need to split across two days.
+  const schemaCloses =
+    parkHours.closeTime === "00:00" ? "23:59" : parkHours.closeTime;
+
   // 4. Write status.json for smart rebuild comparison
   const builtAt = new Date().toISOString();
   const statusJson = {
@@ -198,8 +210,22 @@ async function prerender() {
         url: SITE_URL,
       },
       about: {
-        "@type": "Place",
+        "@type": ["Place", "Park"],
         name: PLACE_NAMES[locale],
+        openingHoursSpecification: {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ],
+          opens: parkHours.openTime,
+          closes: schemaCloses,
+        },
       },
     });
 
