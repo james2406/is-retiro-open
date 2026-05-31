@@ -234,7 +234,13 @@ export function StatusCard({
           {t.loading}
         </p>
       ) : (
-        <div className="flex flex-col items-center text-center max-w-2xl">
+        // data-nosnippet keeps this time-sensitive status out of Google search
+        // snippets so they fall back to the evergreen meta description rather than
+        // caching a stale "CERRADO"/"ABIERTO" from the last crawl.
+        <div
+          className="flex flex-col items-center text-center max-w-2xl"
+          data-nosnippet
+        >
           {/* Big Status Text */}
           <h1
             className="font-black leading-none tracking-tighter text-center w-full"
