@@ -18,7 +18,8 @@ Madrid City Council.
 - **Key Functionality:** Real-time status checking, color-coded accessibility
   interface, description of weather/protocol restrictions.
 - **Functional Scope:** Status is derived from Madrid's park meteorological
-  alert protocol (codes 1-6) plus AEMET warning cross-checks.
+  alert protocol (codes 1-7) plus AEMET warning cross-checks. Upstream code 7
+  is normalized to the existing internal closed state (code 6).
 - **Out of Scope:** Extraordinary non-weather closures (e.g., fire, police or
   security incidents, public health restrictions, maintenance or event
   closures) unless explicitly reflected in the municipal alert feed.
@@ -79,10 +80,13 @@ graph LR
 | **4**    | Alerta Naranja  | **ABIERTO\* / OPEN\*** | **Orange** (`#E67E22`)   | White      | **Restricciones de acceso:** zonas infantiles, deportivas y de mayores; área canina, Pinar de San Blas, Cementerio, Planteles, Jardines de Cecilio Rodríguez y Jardines de Herrero Palacios. **Eventos al aire libre suspendidos.** Se recomienda abandonar el parque si no es imprescindible permanecer.<br>_Access restrictions apply to designated areas; outdoor events are suspended. Recommendation: leave the park unless staying is essential._ |
 | **5**    | Previsión Roja  | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Standard Red Alert)._                                |
 | **6**    | Cerrado         | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | **Cerrado:** [Display `HORARIO_INCIDENCIA`].<br>_Closed due to weather alert (Emergency Closure)._                                 |
+| **7**    | Cerrado         | **CERRADO / CLOSED**   | **Dark Red** (`#C0392B`) | White      | Normalized to internal code 6 before rendering.                                                                                     |
 
 > **Note on Code 5:** Historically treated as "Closing", empirical evidence
 > confirms that Code 5 represents a standard "Red Alert" where gates are locked
 > and access is prohibited, indistinguishable from Code 6 for the end user.
+> Madrid code 7 is likewise indistinguishable from internal code 6 for the end
+> user and is normalized at each ingestion boundary.
 
 ## 4. Frontend Design
 
