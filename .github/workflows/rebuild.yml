@@ -21,6 +21,7 @@ jobs:
             .features[]
             | select(.attributes.ZONA_VERDE | ascii_downcase | contains("retiro"))
             | .attributes.ALERTA_DESCRIPCION // 1
+            | if . == 7 then 6 else . end
           ')
 
           CURRENT_INCIDENTS=$(echo "$RESPONSE" | jq -r '

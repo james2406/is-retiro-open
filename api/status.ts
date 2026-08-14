@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { normalizeMadridAlertCode } from "../src/utils/madridApi";
 
 interface MadridAPIFeature {
   attributes: {
@@ -152,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { ALERTA_DESCRIPCION, FECHA_INCIDENCIA, HORARIO_INCIDENCIA, OBSERVACIONES, PREVISION_APERTURA } =
       retiroFeature.attributes;
-    const alertCode = ALERTA_DESCRIPCION || 1;
+    const alertCode = normalizeMadridAlertCode(ALERTA_DESCRIPCION);
 
     const result = {
       status: getStatusType(alertCode),

@@ -32,6 +32,15 @@ interface MadridAPIResponse {
   features?: MadridAPIFeature[];
 }
 
+export function normalizeMadridAlertCode(code: number | null | undefined): StatusCode {
+  const normalized = code || 1;
+  if (normalized === 7) return 6;
+  if (Number.isInteger(normalized) && normalized >= 1 && normalized <= 6) {
+    return normalized as StatusCode;
+  }
+  throw new Error(`Unexpected Madrid alert code: ${normalized}`);
+}
+
 /**
  * Maps the Madrid API alert code to a StatusType.
  *
@@ -121,11 +130,11 @@ export async function fetchRetiroStatus(): Promise<RetiroStatus> {
 
   const { ALERTA_DESCRIPCION, FECHA_INCIDENCIA, HORARIO_INCIDENCIA, OBSERVACIONES, PREVISION_APERTURA } =
     retiroFeature.attributes;
-  const alertCode = ALERTA_DESCRIPCION || 1;
+  const alertCode = normalizeMadridAlertCode(ALERTA_DESCRIPCION);
 
   return {
     status: getStatusType(alertCode),
-    code: alertCode as StatusCode,
+    code: alertCode,
     message: "Estado actual del parque",
     incidents: HORARIO_INCIDENCIA || null,
     observations: OBSERVACIONES || null,
