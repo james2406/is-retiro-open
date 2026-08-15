@@ -3,7 +3,7 @@ name: Rebuild Site
 on:
   schedule:
     # Run every 15 minutes
-    - cron: "*/15 * * * *"
+    - cron: "2,17,32,47 * * * *"
   workflow_dispatch:
 
 jobs:
