@@ -10,6 +10,14 @@ import type { StatusCode, RetiroStatus } from "./types";
 import type { Locale } from "./i18n";
 import { resolvePrimaryStatus } from "./utils/primaryStatus";
 import { resolveParkHours, type ParkHoursInfo } from "./utils/parkHours";
+// PROTOTYPE: Suru Café ad placements, switch with ?variant=A|B|C
+import { SURU_AD_VARIANTS, type SuruAdVariantKey } from "./components/SuruAd.prototype";
+import { PrototypeSwitcher, useVariantParam } from "./components/PrototypeSwitcher";
+
+const AD_VARIANT_KEYS = Object.keys(SURU_AD_VARIANTS) as SuruAdVariantKey[];
+const AD_VARIANT_LABELS = Object.fromEntries(
+  AD_VARIANT_KEYS.map((k) => [k, SURU_AD_VARIANTS[k].label]),
+) as Record<SuruAdVariantKey, string>;
 
 interface AppProps {
   initialData?: RetiroStatus | null;
@@ -31,6 +39,8 @@ function App({ initialData = null, initialLocale, builtAt }: AppProps) {
   const { data, loading, error, isOffline, lastChangedAt, lastCheckedAt } = useRetiroStatus(initialData, builtAt);
   const weatherWarnings = useWeatherWarnings();
   const parkHours = useParkHours();
+  const [adVariant, setAdVariant] = useVariantParam(AD_VARIANT_KEYS);
+  const SuruAd = SURU_AD_VARIANTS[adVariant];
 
   useEffect(() => {
     // Only attempt detection if no initial locale was provided (e.g. CSR fallback)
@@ -106,9 +116,23 @@ function App({ initialData = null, initialLocale, builtAt }: AppProps) {
           t={t}
         />
 
+        {/* PROTOTYPE: B renders above the attribution, A and C are fixed to the bottom */}
+        {adVariant === "B" && <SuruAd locale={locale} />}
+
         {/* Footer */}
         <Footer textColor={theme.textColor} t={t} />
+
+        {adVariant !== "B" && <SuruAd locale={locale} />}
       </div>
+
+      {import.meta.env.DEV && (
+        <PrototypeSwitcher
+          variants={AD_VARIANT_KEYS}
+          labels={AD_VARIANT_LABELS}
+          current={adVariant}
+          onSelect={setAdVariant}
+        />
+      )}
     </div>
   );
 }

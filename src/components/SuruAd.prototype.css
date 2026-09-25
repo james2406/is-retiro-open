@@ -1,0 +1,44 @@
+/* PROTOTYPE: Suru Café ad placements. Throwaway, see SuruAd.prototype.tsx. */
+
+/* ---- Shared banner content (designer's 2A handoff CSS) ---- */
+.suru-ad { font-family: Archivo, system-ui, sans-serif; }
+.suru-ad[hidden], .suru-ad [hidden] { display: none !important; }
+.suru-ad__inner { position: relative; max-width: 720px; margin: 0 auto; background: #f8f2e3; }
+.suru-ad__meta { position: absolute; top: 5px; right: 8px; display: flex; align-items: center; gap: 8px; }
+.suru-ad__label { font-size: 9px; font-weight: 700; letter-spacing: .22em; color: #7d4a43; }
+.suru-ad__close { border: 0; background: transparent; color: #881a24; font: 17px/1 Archivo, sans-serif; padding: 2px 4px; cursor: pointer; }
+.suru-ad__close:hover { color: #6a1119; }
+.suru-ad__body { padding: 11px 80px 9px 16px; display: flex; flex-direction: column; gap: 4px; text-align: left; }
+.suru-ad__title { font-size: 20px; font-weight: 900; letter-spacing: -.03em; line-height: 1; color: #881a24; text-transform: uppercase; }
+.suru-ad__text { margin: 0; font-size: 12px; line-height: 1.35; color: #4a2b2b; text-wrap: pretty; }
+.suru-ad__text strong { color: #881a24; font-weight: 900; }
+.suru-ad__logo { height: 13px; width: auto; display: inline-block; vertical-align: -2px; margin-right: 2px; }
+.suru-ad__mascot { position: absolute; right: 12px; bottom: 39px; width: 66px; transform: scaleX(-1); pointer-events: none; }
+.suru-ad__mascot img { display: block; width: 100%; height: auto; transform-origin: bottom center; animation: suru-step .62s ease-in-out infinite; }
+.suru-ad__cta { display: flex; align-items: center; justify-content: space-between; background: #881a24; color: #f8f2e3; text-decoration: none; font-size: 12.5px; font-weight: 900; letter-spacing: .02em; text-transform: uppercase; padding: 10px 16px; }
+.suru-ad__cta:hover { background: #6a1119; }
+.suru-ad__cta:focus-visible, .suru-ad__close:focus-visible, .suru-ad__tab:focus-visible { outline: 2px solid #881a24; outline-offset: 2px; }
+@keyframes suru-step { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-5px) rotate(2deg); } }
+@media (prefers-reduced-motion: reduce) { .suru-ad__mascot img { animation: none; } }
+
+/* ---- A: sticky bar (as handed off) ---- */
+.suru-ad--sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; background: #f8f2e3; border-top: 2px solid #881a24; }
+
+/* ---- B: in-page card above the Madrid attribution ---- */
+.suru-ad--card { padding: 0 16px; }
+.suru-ad--card .suru-ad__inner { border: 2px solid #881a24; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 20px rgba(0, 0, 0, .12); }
+
+/* ---- C: tuck-away tab that opens into the full banner ---- */
+.suru-ad--tab { position: fixed; left: 0; right: 0; bottom: 0; z-index: 1000; pointer-events: none; }
+.suru-ad--tab > div { pointer-events: auto; }
+.suru-ad__tab { position: relative; display: flex; align-items: center; gap: 8px; width: 100%; max-width: 720px; margin: 0 auto; border: 0; border-top: 2px solid #881a24; background: #f8f2e3; color: #4a2b2b; font: 13px/1 Archivo, system-ui, sans-serif; padding: 12px 16px; cursor: pointer; text-align: left; }
+.suru-ad__tab:hover { background: #f1e7cf; }
+.suru-ad__tab strong { color: #881a24; font-weight: 900; }
+.suru-ad__tab .suru-ad__logo { height: 15px; }
+.suru-ad__tab-end { margin-left: auto; display: flex; align-items: center; gap: 10px; color: #881a24; font-weight: 900; }
+.suru-ad__tab-mascot { position: absolute; right: 64px; bottom: 100%; width: 40px; transform: scaleX(-1); pointer-events: none; }
+.suru-ad__tab-mascot img { display: block; width: 100%; height: auto; transform-origin: bottom center; animation: suru-step .62s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .suru-ad__tab-mascot img { animation: none; } }
+@media (min-width: 720px) { .suru-ad__tab { border-left: 2px solid #881a24; border-right: 2px solid #881a24; border-radius: 12px 12px 0 0; } }
+.suru-ad--tab .suru-ad__inner { border-top: 2px solid #881a24; box-shadow: 0 -8px 24px rgba(0, 0, 0, .18); }
+@media (min-width: 720px) { .suru-ad--tab .suru-ad__inner { border: 2px solid #881a24; border-bottom: 0; border-radius: 12px 12px 0 0; overflow: hidden; } }

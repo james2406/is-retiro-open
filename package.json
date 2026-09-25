@@ -10,7 +10,8 @@
     "build": "npm run build:client && npm run build:server && tsx prerender.ts",
     "test": "tsx --test api/**/*.test.ts src/**/*.test.ts",
     "preview": "vite preview",
-    "generate-og": "tsx scripts/generate-og-images.ts"
+    "generate-og": "tsx scripts/generate-og-images.ts",
+    "prototype:ad": "vite --open '/?code=1&variant=A'"
   },
   "keywords": [
     "retiro",
