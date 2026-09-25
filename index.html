@@ -41,6 +41,9 @@
   <meta name="twitter:image:alt" content="__TWITTER_IMAGE_ALT__" />
 
   <script type="application/ld+json">__JSON_LD__</script>
+
+  <!-- Hide the ad (and the space kept for it) before first paint for visitors who closed it. -->
+  <script>try { if (localStorage.getItem("suruAdDismissed")) document.documentElement.classList.add("suru-ad-dismissed"); } catch (e) {}</script>
 </head>
 
 <body>

@@ -4,6 +4,7 @@ import { useRetiroStatus } from "./hooks/useRetiroStatus";
 import { useWeatherWarnings } from "./hooks/useWeatherWarnings";
 import { StatusCard } from "./components/StatusCard";
 import { Footer } from "./components/Footer";
+import { SuruAd } from "./components/SuruAd";
 import { STATUS_THEMES, ERROR_THEME, NIGHT_THEME } from "./types";
 import { detectLocale, getTranslations } from "./i18n";
 import type { StatusCode, RetiroStatus } from "./types";
@@ -108,6 +109,9 @@ function App({ initialData = null, initialLocale, builtAt }: AppProps) {
 
         {/* Footer */}
         <Footer textColor={theme.textColor} t={t} />
+
+        {/* Advertisement, fixed to the bottom of the viewport */}
+        <SuruAd locale={locale} />
       </div>
     </div>
   );
