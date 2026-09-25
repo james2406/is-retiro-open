@@ -68,7 +68,13 @@ export function SuruAd({ locale }: { locale: Locale }) {
 
   return (
     <>
-      <div className={`suru-ad ${RESERVED_HEIGHT}`} aria-hidden="true" />
+      <div
+        className={`suru-ad ${RESERVED_HEIGHT}`}
+        // Grows if the banner turns out taller than the preset (e.g. enlarged
+        // text), so the attribution stays visible. +2 for the banner's top border.
+        style={height === null ? undefined : { minHeight: height + 2 }}
+        aria-hidden="true"
+      />
       {mounted && (
         <aside
           className="suru-ad fixed inset-x-0 bottom-0 z-50 border-t-2 border-[#881a24] bg-[#f8f2e3]"

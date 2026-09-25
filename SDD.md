@@ -722,7 +722,9 @@ no trace in how Google indexes, ranks or summarises the page.
 - **No layout shift:** The page reserves the banner's height (per screen-width
   breakpoint, see `RESERVED_HEIGHT` in `src/components/SuruAd.tsx`) in the
   server-rendered HTML, so nothing moves when the ad loads. The banner itself is
-  `position: fixed`.
+  `position: fixed`. If the banner turns out taller than the reserved space
+  (e.g. a visitor with enlarged text), the space grows to match, so the
+  attribution stays visible.
 - **Loads after the status:** The iframe is added after hydration, and its font
   (Archivo) is self-hosted in `public/ads/suru/`, so the ad never competes with
   the status text and makes no third-party requests.
