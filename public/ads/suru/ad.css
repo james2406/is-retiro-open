@@ -1,0 +1,36 @@
+/* Suru Café banner (design 2A), rendered inside the iframe from src/components/SuruAd.tsx. */
+@font-face {
+  font-family: "Archivo";
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url(archivo-latin.woff2) format("woff2");
+}
+
+html, body { margin: 0; background: #f8f2e3; }
+body { font-family: Archivo, system-ui, sans-serif; overflow: hidden; }
+
+.suru-ad { position: relative; max-width: 720px; margin: 0 auto; }
+.suru-ad__meta { position: absolute; top: 5px; right: 8px; display: flex; align-items: center; gap: 8px; }
+.suru-ad__label { font-size: 9px; font-weight: 700; letter-spacing: .22em; color: #7d4a43; }
+.suru-ad__close { border: 0; background: transparent; color: #881a24; font: 17px/1 Archivo, sans-serif; padding: 2px 4px; cursor: pointer; }
+.suru-ad__close:hover { color: #6a1119; }
+/* min-height keeps room for the mascot under the label and × when the copy is short. */
+.suru-ad__body { box-sizing: border-box; min-height: 98px; padding: 11px 80px 9px 16px; display: flex; flex-direction: column; gap: 4px; }
+.suru-ad__title { font-size: 20px; font-weight: 900; letter-spacing: -.03em; line-height: 1; color: #881a24; text-transform: uppercase; }
+.suru-ad__text { margin: 0; font-size: 12px; line-height: 1.35; color: #4a2b2b; text-wrap: pretty; }
+.suru-ad__text strong { color: #881a24; font-weight: 900; }
+.suru-ad__text a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.suru-ad__text a:hover { color: #881a24; }
+.suru-ad__logo { height: 13px; width: auto; display: inline-block; vertical-align: -2px; margin-right: 2px; }
+/* Flipped so the mascot faces the text. */
+.suru-ad__mascot { position: absolute; right: 12px; bottom: 39px; width: 66px; height: auto; transform: scaleX(-1); pointer-events: none; }
+/* On wide screens the copy fits on one line, so the mascot moves to the left of
+   the label and × and the banner can be shorter. */
+@media (min-width: 640px) {
+  .suru-ad__body { min-height: 0; padding-right: 170px; }
+  .suru-ad__mascot { right: 92px; }
+}
+.suru-ad__cta { display: flex; align-items: center; justify-content: space-between; background: #881a24; color: #f8f2e3; text-decoration: none; font-size: 12.5px; font-weight: 900; letter-spacing: .02em; text-transform: uppercase; padding: 10px 16px; }
+.suru-ad__cta:hover { background: #6a1119; }
+.suru-ad a:focus-visible, .suru-ad__close:focus-visible { outline: 2px solid #881a24; outline-offset: 2px; }

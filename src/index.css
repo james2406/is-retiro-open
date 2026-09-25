@@ -14,3 +14,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
+
+/* Set in index.html before first paint for visitors who closed the ad (see SuruAd.tsx) */
+.suru-ad-dismissed .suru-ad {
+  display: none;
+}

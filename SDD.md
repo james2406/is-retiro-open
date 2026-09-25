@@ -188,7 +188,8 @@ Example URLs:
 Data is used under the _Madrid Open Data_ license.
 
 - **Requirement:** Attribution to "Ayuntamiento de Madrid" is mandatory and
-  included in the footer.
+  included in the footer. The advertising banner (section 9) reserves space at
+  the end of the page so it never covers the attribution.
 
 ## 7. Rich Media Preview (Open Graph)
 
@@ -698,3 +699,49 @@ If AEMET API is unreachable when proxy is called:
 - Core park status functionality unaffected
 
 Weather warnings are supplementary; the site must work without them.
+
+## 9. Advertising (Suru Café banner)
+
+### 9.1 Purpose
+
+A sponsored banner for Suru Café sits at the bottom of both the Spanish and
+English pages. Search visibility is the priority, so the ad is built to leave
+no trace in how Google indexes, ranks or summarises the page.
+
+### 9.2 SEO Safeguards
+
+- **Separate noindex page in an iframe:** The ad lives at
+  `public/ads/suru/{es,en}.html`, marked `noindex, nofollow` by both a meta tag
+  and an `X-Robots-Tag` header (`vercel.json`). Google does not index a noindex
+  page's content as part of a page that embeds it, so none of the ad's words
+  count towards the status page. This matters because the status page has very
+  little text of its own.
+- **Paid links:** Every link in the ad uses `rel="sponsored nofollow noopener"`,
+  as Google requires for paid links. `nofollow` covers engines that don't read
+  `sponsored`.
+- **No layout shift:** The page reserves the banner's height (per screen-width
+  breakpoint, see `RESERVED_HEIGHT` in `src/components/SuruAd.tsx`) in the
+  server-rendered HTML, so nothing moves when the ad loads. The banner itself is
+  `position: fixed`. If the banner turns out taller than the reserved space
+  (e.g. a visitor with enlarged text), the space grows to match, so the
+  attribution stays visible.
+- **Loads after the status:** The iframe is added after hydration, and its font
+  (Archivo) is self-hosted in `public/ads/suru/`, so the ad never competes with
+  the status text and makes no third-party requests.
+
+### 9.3 Behaviour
+
+- The iframe reports its height and × clicks to the page through `postMessage`.
+  The page only accepts messages from its own origin and from the ad iframe.
+- Closing the ad stores `suruAdDismissed` in `localStorage`. An inline script in
+  `index.html` reads it before first paint and hides the ad and its reserved
+  space, so returning visitors who closed it see no shift and never load the
+  iframe.
+
+### 9.4 Changing the Ad
+
+- Copy lives in `public/ads/suru/es.html` and `en.html`. If it changes length,
+  re-measure the banner's height at each breakpoint and update
+  `RESERVED_HEIGHT`.
+- Links: the CTA goes to `https://app.granops.com/s/cggyuk` and the address
+  goes to Suru Café's Google Maps listing.
